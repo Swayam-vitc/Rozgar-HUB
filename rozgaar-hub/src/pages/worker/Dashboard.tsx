@@ -9,6 +9,8 @@ import { LevelBadge } from "@/components/LevelBadge";
 import { WorkerCalendar } from "@/components/WorkerCalendar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   IndianRupee,
   Briefcase,
@@ -17,6 +19,10 @@ import {
   Users,
   Wallet,
   MessageSquare,
+  MapPin,
+  CheckCircle,
+  XCircle,
+  Phone,
 } from "lucide-react";
 import { mockPayments, mockCalendarEvents } from "@/lib/mockData";
 import { useNavigate } from "react-router-dom";
@@ -28,25 +34,50 @@ export default function WorkerDashboard() {
   const { user } = useAuthStore();
   const [workerProfile, setWorkerProfile] = useState<WorkerProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [ongoingJobs, setOngoingJobs] = useState<any[]>([]);
+  const [rejectedJobs, setRejectedJobs] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await workerAPI.getProfile() as any;
-        if (response.success) {
-          setWorkerProfile(response.worker);
+
+        // Fetch profile
+        const profileResponse = await workerAPI.getProfile() as any;
+        if (profileResponse.success) {
+          setWorkerProfile(profileResponse.worker);
+        }
+
+        // Fetch accepted hire requests (ongoing jobs)
+        const acceptedResponse = await workerAPI.getHireRequests({ status: 'accepted' }) as any;
+        if (acceptedResponse.success) {
+          setOngoingJobs(acceptedResponse.hireRequests || []);
+        }
+
+        // Fetch rejected hire requests
+        const rejectedResponse = await workerAPI.getHireRequests({ status: 'rejected' }) as any;
+        if (rejectedResponse.success) {
+          setRejectedJobs(rejectedResponse.hireRequests || []);
         }
       } catch (error) {
-        console.error("Error fetching profile:", error);
-        toast.error("Failed to load profile data");
+        console.error("Error fetching data:", error);
+        toast.error("Failed to load dashboard data");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
+    fetchData();
   }, []);
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   // Show loading state if user data is not yet loaded
   if (loading) {
@@ -87,8 +118,8 @@ export default function WorkerDashboard() {
               trend="+12% from last month"
             />
             <StatCard
-              title="Active Jobs"
-              value="0" // TODO: Fetch active jobs count
+              title="Ongoing Jobs"
+              value={ongoingJobs.length.toString()}
               icon={Briefcase}
               gradient="gradient-saffron"
             />
@@ -134,6 +165,116 @@ export default function WorkerDashboard() {
               <span>Messages</span>
             </Button>
           </div>
+
+          {/* Ongoing Jobs Section */}
+          {ongoingJobs.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <CheckCircle className="h-6 w-6 text-green-500" />
+                Ongoing Jobs
+              </h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {ongoingJobs.map((job) => (
+                  <Card key={job._id} className="shadow-card hover:shadow-elevated transition-all">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={job.employerPhoto} />
+                          <AvatarFallback className="gradient-saffron text-white">
+                            {job.employerName?.[0] || "E"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm truncate">{job.employerName}</h4>
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Phone className="h-3 w-3" />
+                            <span>{job.employerPhoneNumber}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <CardTitle className="text-base">{job.jobTitle || "Work Assignment"}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {job.jobDescription && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{job.jobDescription}</p>
+                      )}
+                      {(job.jobLocation?.city || job.jobLocation?.state) && (
+                        <div className="flex items-center gap-1 text-sm">
+                          <MapPin className="h-3 w-3 text-muted-foreground" />
+                          <span>
+                            {[job.jobLocation?.city, job.jobLocation?.state]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
+                        </div>
+                      )}
+                      {job.salaryAmount > 0 && (
+                        <div className="flex items-center gap-2">
+                          <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-bold text-primary">₹{job.salaryAmount}</span>
+                          {job.salaryType && (
+                            <Badge variant="secondary" className="text-xs">
+                              {job.salaryType}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        Accepted on {formatDate(job.updatedAt || job.createdAt)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Rejected Jobs Section */}
+          {rejectedJobs.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <XCircle className="h-6 w-6 text-red-500" />
+                Rejected Jobs
+              </h3>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {rejectedJobs.map((job) => (
+                  <Card key={job._id} className="shadow-card opacity-75">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={job.employerPhoto} />
+                          <AvatarFallback className="bg-muted">
+                            {job.employerName?.[0] || "E"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm truncate">{job.employerName}</h4>
+                        </div>
+                        <Badge variant="destructive" className="text-xs">Rejected</Badge>
+                      </div>
+                      <CardTitle className="text-base">{job.jobTitle || "Work Assignment"}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {job.salaryAmount > 0 && (
+                        <div className="flex items-center gap-2">
+                          <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-bold">₹{job.salaryAmount}</span>
+                          {job.salaryType && (
+                            <Badge variant="outline" className="text-xs">
+                              {job.salaryType}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                      <div className="text-xs text-muted-foreground">
+                        Rejected on {formatDate(job.updatedAt || job.createdAt)}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Main Content Grid */}
           <div className="grid lg:grid-cols-3 gap-8">

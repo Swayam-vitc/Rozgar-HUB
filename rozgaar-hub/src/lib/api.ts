@@ -71,6 +71,7 @@ export const employerAPI = {
     deleteJob: (id) => api.delete(`/employer/jobs/${id}`),
     searchWorkers: (params) => api.get('/employer/workers', { params }),
     getWorkerProfile: (workerId) => api.get(`/employer/worker/${workerId}`),
+    getAllApplications: () => api.get('/employer/applications'),
     getApplications: (jobId) => api.get(`/employer/applications/${jobId}`),
     updateApplication: (id, data) => api.put(`/employer/applications/${id}`, data),
     createPayment: (data) => api.post('/employer/payments', data),

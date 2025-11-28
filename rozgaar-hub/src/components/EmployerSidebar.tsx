@@ -1,14 +1,15 @@
 import { NavLink } from "@/components/NavLink";
-import { 
-  LayoutDashboard, 
-  PlusCircle, 
-  FolderOpen, 
-  Users, 
-  CreditCard, 
+import {
+  LayoutDashboard,
+  PlusCircle,
+  FolderOpen,
+  Users,
+  CreditCard,
   MessageSquare,
   Menu,
   X,
-  Briefcase
+  Briefcase,
+  FileText
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ const navigation = [
   { name: "Post Job", href: "/employer/post-job", icon: PlusCircle },
   { name: "My Projects", href: "/employer/projects", icon: FolderOpen },
   { name: "Workers", href: "/employer/workers", icon: Users },
+  { name: "Applications", href: "/employer/applications", icon: FileText },
   { name: "Payments", href: "/employer/payments", icon: CreditCard },
   { name: "Messages", href: "/employer/messages", icon: MessageSquare },
 ];

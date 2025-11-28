@@ -7,6 +7,7 @@ import {
     deleteJob,
     searchWorkers,
     getJobApplications,
+    getAllApplications,
     updateApplicationStatus,
     createPayment,
     getAnalytics,
@@ -29,6 +30,7 @@ router.get('/jobs', getMyJobs);
 router.put('/jobs/:id', updateJob);
 router.delete('/jobs/:id', deleteJob);
 router.get('/workers', searchWorkers);
+router.get('/applications', getAllApplications);
 router.get('/applications/:jobId', getJobApplications);
 router.put('/applications/:id', updateApplicationStatus);
 router.post('/payments', createPayment);

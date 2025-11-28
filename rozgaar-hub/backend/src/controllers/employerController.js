@@ -240,6 +240,35 @@ export const getJobApplications = async (req, res) => {
     }
 };
 
+// @desc    Get all applications for employer's jobs
+// @route   GET /api/employer/applications
+// @access  Private (Employer)
+export const getAllApplications = async (req, res) => {
+    try {
+        // Find all jobs posted by this employer
+        const jobs = await Job.find({ employerId: req.user._id }).select('_id');
+        const jobIds = jobs.map(job => job._id);
+
+        // Find all applications for those jobs
+        const applications = await Application.find({ jobId: { $in: jobIds } })
+            .populate('workerId', 'name phone profilePhoto skills rating completedJobs verified location')
+            .populate('jobId', 'title location payType payAmount status')
+            .sort({ appliedDate: -1 });
+
+        res.json({
+            success: true,
+            count: applications.length,
+            applications
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching applications',
+            error: error.message
+        });
+    }
+};
+
 // @desc    Accept/reject application
 // @route   PUT /api/employer/applications/:id
 // @access  Private (Employer)
@@ -489,6 +518,7 @@ export const hireWorker = async (req, res) => {
         const {
             workerId,
             jobId,
+            applicationId,
             jobTitle,
             jobDescription,
             jobLocation,

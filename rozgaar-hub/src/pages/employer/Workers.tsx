@@ -11,20 +11,48 @@ import { StreakBadge } from "@/components/StreakBadge";
 import { LevelBadge } from "@/components/LevelBadge";
 import { employerAPI } from "@/lib/api";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Workers() {
   const navigate = useNavigate();
   const [workers, setWorkers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [hireDialogOpen, setHireDialogOpen] = useState(false);
+  const [selectedWorker, setSelectedWorker] = useState<any>(null);
+  const [hiring, setHiring] = useState(false);
+
+  const [hireForm, setHireForm] = useState({
+    jobTitle: "",
+    jobDescription: "",
+    state: "",
+    city: "",
+    salaryType: "daily",
+    salaryAmount: "",
+    message: ""
+  });
 
   const fetchWorkers = async (query = "") => {
     try {
       setLoading(true);
       const params: any = {};
       if (query) {
-        // Simple search by skill or location for now
-        // Ideally backend should support general search query
         params.skills = query;
       }
 
@@ -51,6 +79,65 @@ export default function Workers() {
 
   const handleViewProfile = (workerId: string) => {
     navigate(`/employer/worker/${workerId}`);
+  };
+
+  const handleHireClick = (worker: any) => {
+    setSelectedWorker(worker);
+    setHireForm({
+      jobTitle: "",
+      jobDescription: "",
+      state: "",
+      city: worker.location || "",
+      salaryType: "daily",
+      salaryAmount: worker.dailyRate?.toString() || "",
+      message: ""
+    });
+    setHireDialogOpen(true);
+  };
+
+  const handleHireSubmit = async () => {
+    if (!selectedWorker) return;
+
+    if (!hireForm.jobTitle || !hireForm.salaryAmount) {
+      toast.error("Please fill in job title and salary");
+      return;
+    }
+
+    try {
+      setHiring(true);
+      const response = await employerAPI.hireWorker({
+        workerId: selectedWorker._id,
+        jobTitle: hireForm.jobTitle,
+        jobDescription: hireForm.jobDescription,
+        jobLocation: {
+          state: hireForm.state,
+          city: hireForm.city
+        },
+        salaryType: hireForm.salaryType,
+        salaryAmount: parseFloat(hireForm.salaryAmount),
+        message: hireForm.message
+      }) as any;
+
+      if (response.success) {
+        toast.success("Hire request sent successfully!");
+        setHireDialogOpen(false);
+        setSelectedWorker(null);
+        setHireForm({
+          jobTitle: "",
+          jobDescription: "",
+          state: "",
+          city: "",
+          salaryType: "daily",
+          salaryAmount: "",
+          message: ""
+        });
+      }
+    } catch (error: any) {
+      console.error("Error hiring worker:", error);
+      toast.error(error.message || "Failed to send hire request");
+    } finally {
+      setHiring(false);
+    }
   };
 
   return (
@@ -144,7 +231,11 @@ export default function Workers() {
                       >
                         View Profile
                       </Button>
-                      <Button className="flex-1 gradient-hero text-white" size="sm">
+                      <Button
+                        className="flex-1 gradient-hero text-white"
+                        size="sm"
+                        onClick={() => handleHireClick(worker)}
+                      >
                         Hire
                       </Button>
                     </div>
@@ -155,6 +246,115 @@ export default function Workers() {
           </div>
         </div>
       </main>
+
+      {/* Hire Dialog */}
+      <Dialog open={hireDialogOpen} onOpenChange={setHireDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Hire {selectedWorker?.name}</DialogTitle>
+            <DialogDescription>
+              Fill in the job details to send a hiring request to this worker.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="jobTitle">Job Title *</Label>
+              <Input
+                id="jobTitle"
+                value={hireForm.jobTitle}
+                onChange={(e) => setHireForm({ ...hireForm, jobTitle: e.target.value })}
+                placeholder="e.g., Plumber for Home Repair"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="jobDescription">Job Description</Label>
+              <Textarea
+                id="jobDescription"
+                value={hireForm.jobDescription}
+                onChange={(e) => setHireForm({ ...hireForm, jobDescription: e.target.value })}
+                placeholder="Describe the work to be done..."
+                rows={3}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="state">State</Label>
+                <Input
+                  id="state"
+                  value={hireForm.state}
+                  onChange={(e) => setHireForm({ ...hireForm, state: e.target.value })}
+                  placeholder="State"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="city">City</Label>
+                <Input
+                  id="city"
+                  value={hireForm.city}
+                  onChange={(e) => setHireForm({ ...hireForm, city: e.target.value })}
+                  placeholder="City"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="salaryType">Salary Type *</Label>
+                <Select
+                  value={hireForm.salaryType}
+                  onValueChange={(value) => setHireForm({ ...hireForm, salaryType: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="hourly">Hourly</SelectItem>
+                    <SelectItem value="daily">Daily</SelectItem>
+                    <SelectItem value="fixed">Fixed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="salaryAmount">Amount (₹) *</Label>
+                <Input
+                  id="salaryAmount"
+                  type="number"
+                  value={hireForm.salaryAmount}
+                  onChange={(e) => setHireForm({ ...hireForm, salaryAmount: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="message">Message to Worker</Label>
+              <Textarea
+                id="message"
+                value={hireForm.message}
+                onChange={(e) => setHireForm({ ...hireForm, message: e.target.value })}
+                placeholder="Any additional message..."
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setHireDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleHireSubmit}
+              disabled={hiring}
+              className="gradient-hero text-white"
+            >
+              {hiring ? "Sending..." : "Send Hire Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

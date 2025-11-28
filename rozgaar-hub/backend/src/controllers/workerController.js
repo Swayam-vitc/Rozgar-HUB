@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Job from '../models/Job.js';
 import Application from '../models/Application.js';
 import Payment from '../models/Payment.js';
@@ -271,6 +272,7 @@ export const getPayments = async (req, res) => {
 export const getHireRequests = async (req, res) => {
     try {
         const { status } = req.query;
+        console.log('Fetching hire requests for worker:', req.user._id, 'status:', status);
 
         let query = { workerId: req.user._id };
 
@@ -281,15 +283,19 @@ export const getHireRequests = async (req, res) => {
         const hireRequests = await HireRequest.find(query)
             .sort({ createdAt: -1 });
 
+        console.log('Found hire requests:', hireRequests.length);
+
         res.json({
             success: true,
             count: hireRequests.length,
             hireRequests
         });
     } catch (error) {
+        console.error('Error in getHireRequests:', error);
         res.status(500).json({
             success: false,
-            message: 'Error fetching hire requests'
+            message: 'Error fetching hire requests',
+            error: error.message
         });
     }
 };

@@ -28,6 +28,7 @@ import EmployerViewProject from "./pages/employer/ViewProject";
 import EmployerEditProject from "./pages/employer/EditProject";
 import EmployerWorkers from "./pages/employer/Workers";
 import EmployerWorkerProfile from "./pages/employer/WorkerProfile";
+import EmployerApplications from "./pages/employer/Applications";
 import EmployerPayments from "./pages/employer/Payments";
 import EmployerMessages from "./pages/employer/Messages";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -146,6 +147,11 @@ const App = () => (
             <Route path="/employer/worker/:id" element={
               <ProtectedRoute requiredRole="employer">
                 <EmployerWorkerProfile />
+              </ProtectedRoute>
+            } />
+            <Route path="/employer/applications" element={
+              <ProtectedRoute requiredRole="employer">
+                <EmployerApplications />
               </ProtectedRoute>
             } />
             <Route path="/employer/payments" element={

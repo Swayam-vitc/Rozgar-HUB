@@ -165,46 +165,78 @@ export const getConversations = async (req, res) => {
     try {
         const userId = req.user._id;
 
-        // Find all conversations where user is a participant
-        const conversations = await Conversation.find({
-            participants: userId
+        // Find all hire requests where user is either employer or worker
+        const hireRequests = await HireRequest.find({
+            $or: [
+                { employerId: userId },
+                { workerId: userId }
+            ]
         })
-            .populate({
-                path: 'connectionId',
-                populate: [
-                    { path: 'workerId', select: 'name profilePhoto role' },
-                    { path: 'employerId', select: 'name profilePhoto role' },
-                    { path: 'jobId', select: 'title' }
-                ]
-            })
-            .populate('lastMessage.senderId', 'name')
-            .sort({ 'lastMessage.timestamp': -1 });
+            .populate('workerId', 'name profilePhoto role')
+            .populate('employerId', 'name profilePhoto role')
+            .populate('jobId', 'title')
+            .sort({ createdAt: -1 });
 
-        // Format conversations with other participant info
-        const formattedConversations = conversations.map(conv => {
-            const connection = conv.connectionId;
-            if (!connection) return null;
+        // Get all conversations for these hire requests
+        const connectionIds = hireRequests.map(hr => hr._id);
+        const conversations = await Conversation.find({
+            connectionId: { $in: connectionIds }
+        }).populate('lastMessage.senderId', 'name');
+
+        // Create a map of connectionId -> conversation for quick lookup
+        const conversationMap = new Map();
+        conversations.forEach(conv => {
+            conversationMap.set(conv.connectionId.toString(), conv);
+        });
+
+        // Format all hire requests as conversations
+        const formattedConversations = hireRequests.map(hireRequest => {
+            const conversation = conversationMap.get(hireRequest._id.toString());
 
             // Determine the other participant
-            const otherParticipant = connection.workerId._id.toString() === userId.toString()
-                ? connection.employerId
-                : connection.workerId;
+            const otherParticipant = hireRequest.workerId._id.toString() === userId.toString()
+                ? hireRequest.employerId
+                : hireRequest.workerId;
+
+            // Determine job title
+            let jobTitle = 'Direct Hire';
+            if (hireRequest.jobId?.title) {
+                jobTitle = hireRequest.jobId.title;
+            } else if (hireRequest.jobTitle) {
+                jobTitle = hireRequest.jobTitle;
+            }
 
             return {
-                _id: conv._id,
-                connectionId: connection._id,
-                jobTitle: connection.jobId?.title || 'Unknown Job',
+                _id: conversation?._id || hireRequest._id,
+                connectionId: hireRequest._id,
+                jobTitle: jobTitle,
                 otherUser: {
                     _id: otherParticipant._id,
                     name: otherParticipant.name,
                     profilePhoto: otherParticipant.profilePhoto,
                     role: otherParticipant.role
                 },
-                lastMessage: conv.lastMessage,
-                unreadCount: conv.unreadCount.get(userId.toString()) || 0,
-                updatedAt: conv.updatedAt
+                lastMessage: conversation?.lastMessage || {
+                    text: hireRequest.message || 'Start a conversation',
+                    senderId: hireRequest.employerId,
+                    timestamp: hireRequest.createdAt
+                },
+                unreadCount: conversation?.unreadCount.get(userId.toString()) || 0,
+                updatedAt: conversation?.updatedAt || hireRequest.createdAt,
+                hireRequestStatus: hireRequest.status,
+                paid: hireRequest.paid || false,
+                completed: hireRequest.completed || false,
+                rating: hireRequest.rating || null,
+                feedback: hireRequest.feedback || ''
             };
-        }).filter(conv => conv !== null);
+        });
+
+        // Sort by last message timestamp (most recent first)
+        formattedConversations.sort((a, b) => {
+            const timeA = new Date(a.lastMessage.timestamp || a.updatedAt);
+            const timeB = new Date(b.lastMessage.timestamp || b.updatedAt);
+            return timeB - timeA;
+        });
 
         res.json({
             success: true,

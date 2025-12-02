@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { X, Loader2 } from "lucide-react";
 import { authAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
+import { StateCitySelector } from "@/components/StateCitySelector";
+import type { Location } from "@/lib/indianStatesAndCities";
 
 const commonSkills = [
   "Construction",
@@ -31,7 +33,7 @@ export default function WorkerOnboarding() {
   const [customSkill, setCustomSkill] = useState("");
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    location: "",
+    location: { state: "", city: "" } as Location,
     hourlyRate: "",
     dailyRate: "",
     bio: "",
@@ -145,16 +147,11 @@ export default function WorkerOnboarding() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="location">Your Location</Label>
-              <Input
-                id="location"
-                placeholder="City, State"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                required
-              />
-            </div>
+            <StateCitySelector
+              value={formData.location}
+              onChange={(location) => setFormData({ ...formData, location })}
+              required
+            />
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="space-y-2">

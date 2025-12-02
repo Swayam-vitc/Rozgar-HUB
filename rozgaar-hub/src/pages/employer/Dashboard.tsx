@@ -153,7 +153,7 @@ export default function EmployerDashboard() {
                     >
                       <div className="flex-1">
                         <h3 className="font-semibold">{job.title}</h3>
-                        <p className="text-sm text-muted-foreground">{job.location}</p>
+                        <p className="text-sm text-muted-foreground">{job.location?.city}, {job.location?.state}</p>
                       </div>
                       <div className="text-right">
                         <p className="font-medium">₹{job.budget || job.payAmount}/{job.payType}</p>

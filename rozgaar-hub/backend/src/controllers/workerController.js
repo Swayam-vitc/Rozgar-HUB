@@ -27,12 +27,19 @@ export const getWorkerProfile = async (req, res) => {
 // @access  Private (Worker)
 export const browseJobs = async (req, res) => {
     try {
-        const { location, skills, minPay, maxPay, payType, status } = req.query;
+        const { location, skills, minPay, maxPay, payType, status, allIndia } = req.query;
+        const workerState = req.user.location?.state;
 
         let query = { status: status || 'open' };
 
+        // Location filtering
+        if (!allIndia && workerState) {
+            // Default: show only jobs from same state
+            query['location.state'] = workerState;
+        }
+
         if (location) {
-            query.location = { $regex: location, $options: 'i' };
+            query['location.city'] = { $regex: location, $options: 'i' };
         }
 
         if (skills) {
@@ -50,15 +57,41 @@ export const browseJobs = async (req, res) => {
             query.payType = payType;
         }
 
-        const jobs = await Job.find(query)
+        let jobs = await Job.find(query)
             .populate('employerId', 'name companyName profilePhoto rating')
-            .sort({ postedDate: -1 })
-            .limit(50);
+            .limit(100);
+
+        // Proximity-based sorting
+        if (workerState) {
+            const workerCity = req.user.location?.city;
+
+            jobs.sort((a, b) => {
+                const aState = a.location?.state || '';
+                const aCity = a.location?.city || '';
+                const bState = b.location?.state || '';
+                const bCity = b.location?.city || '';
+
+                // Same city = highest priority
+                if (aCity === workerCity && bCity !== workerCity) return -1;
+                if (bCity === workerCity && aCity !== workerCity) return 1;
+
+                // Same state = medium priority
+                if (aState === workerState && bState !== workerState) return -1;
+                if (bState === workerState && aState !== workerState) return 1;
+
+                // Sort by posted date if same proximity
+                return new Date(b.postedDate) - new Date(a.postedDate);
+            });
+        }
 
         res.json({
             success: true,
             count: jobs.length,
-            jobs
+            jobs,
+            filters: {
+                state: allIndia ? 'All India' : workerState,
+                allIndia: allIndia === 'true'
+            }
         });
     } catch (error) {
         res.status(500).json({

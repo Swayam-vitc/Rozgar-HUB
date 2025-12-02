@@ -45,8 +45,15 @@ const userSchema = new mongoose.Schema({
         type: String
     }],
     location: {
-        type: String,
-        default: ''
+        state: {
+            type: String,
+            default: '',
+            index: true // For efficient location-based queries
+        },
+        city: {
+            type: String,
+            default: ''
+        }
     },
     hourlyRate: {
         type: Number,
@@ -79,7 +86,7 @@ const userSchema = new mongoose.Schema({
     },
     level: {
         type: String,
-        enum: ['bronze', 'silver', 'gold'],
+        enum: ['bronze', 'silver', 'gold', 'diamond'],
         default: 'bronze'
     },
     totalEarnings: {
@@ -89,6 +96,43 @@ const userSchema = new mongoose.Schema({
     verified: {
         type: Boolean,
         default: false
+    },
+    // Rating system fields
+    ratings: [{
+        employerId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        rating: {
+            type: Number,
+            min: 1,
+            max: 5
+        },
+        feedback: String,
+        hireRequestId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'HireRequest'
+        },
+        date: {
+            type: Date,
+            default: Date.now
+        }
+    }],
+    averageRating: {
+        type: Number,
+        default: 0
+    },
+    bestRating: {
+        type: Number,
+        default: 0
+    },
+    worstRating: {
+        type: Number,
+        default: 5
+    },
+    totalRatings: {
+        type: Number,
+        default: 0
     },
     // Employer-specific fields
     companyName: {

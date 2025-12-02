@@ -65,6 +65,28 @@ const hireRequestSchema = new mongoose.Schema({
     message: {
         type: String,
         default: ''
+    },
+    paid: {
+        type: Boolean,
+        default: false
+    },
+    completed: {
+        type: Boolean,
+        default: false
+    },
+    rating: {
+        type: Number,
+        min: 1,
+        max: 5,
+        default: null
+    },
+    feedback: {
+        type: String,
+        default: ''
+    },
+    completedAt: {
+        type: Date,
+        default: null
     }
 }, {
     timestamps: true

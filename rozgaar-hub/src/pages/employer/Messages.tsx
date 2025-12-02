@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect, useRef } from "react";
-import { Send, Loader2, MessageCircle } from "lucide-react";
-import { messageAPI } from "@/lib/api";
+import { Send, Loader2, MessageCircle, CheckCircle2, CreditCard } from "lucide-react";
+import { messageAPI, employerAPI } from "@/lib/api";
 import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuthStore } from "@/store/authStore";
+import { RatingModal } from "@/components/RatingModal";
+import axios from "axios";
 
 interface Message {
   _id: string;
@@ -39,6 +41,13 @@ interface Conversation {
     timestamp: string;
   };
   unreadCount: number;
+  hireRequestStatus?: string;
+  paid?: boolean;
+  completed?: boolean;
+  rating?: number;
+  hireRequestId?: {
+    _id: string;
+  };
 }
 
 export default function Messages() {
@@ -50,6 +59,8 @@ export default function Messages() {
   const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingConversation, setRatingConversation] = useState<Conversation | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch conversations on mount
@@ -64,7 +75,7 @@ export default function Messages() {
     // Listen for new messages
     socket.on("receive-message", (data: any) => {
       if (selectedConversation && data.message.connectionId === selectedConversation.connectionId) {
-        setMessages(prev => [prev, data.message]);
+        setMessages(prev => [...prev, data.message]);
         scrollToBottom();
 
         // Mark as read
@@ -157,6 +168,46 @@ export default function Messages() {
     }
   };
 
+  const handlePayment = async (connectionId: string) => {
+    try {
+      await employerAPI.markHireRequestPaid(connectionId);
+      toast.success("Payment marked as complete!");
+      fetchConversations();
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      toast.error("Failed to process payment");
+    }
+  };
+
+  const handleJobDone = (conversation: Conversation) => {
+    setRatingConversation(conversation);
+    setShowRatingModal(true);
+  };
+
+  const handleSubmitRating = async (rating: number, feedback: string) => {
+    if (!ratingConversation) return;
+
+    try {
+      const response = await employerAPI.completeJobWithRating(ratingConversation.connectionId, {
+        rating,
+        feedback
+      }) as any;
+      toast.success("Rating submitted successfully!");
+      setShowRatingModal(false);
+      setRatingConversation(null);
+      fetchConversations();
+
+      // Clear selected conversation if it was the rated one
+      if (selectedConversation?.connectionId === ratingConversation.connectionId) {
+        setSelectedConversation(null);
+      }
+    } catch (error) {
+      console.error("Error submitting rating:", error);
+      toast.error("Failed to submit rating");
+      throw error;
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -222,6 +273,37 @@ export default function Messages() {
                         <p className="text-xs text-muted-foreground mt-1">
                           {format(new Date(conv.lastMessage.timestamp), "MMM d, h:mm a")}
                         </p>
+
+                        {/* Action Buttons */}
+                        <div className="flex gap-2 mt-2" onClick={(e) => e.stopPropagation()}>
+                          {conv.hireRequestStatus === 'accepted' && !conv.paid && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs"
+                              onClick={() => handlePayment(conv.connectionId)}
+                            >
+                              <CreditCard className="h-3 w-3 mr-1" />
+                              Pay
+                            </Button>
+                          )}
+                          {conv.hireRequestStatus === 'accepted' && conv.paid && !conv.completed && (
+                            <Button
+                              size="sm"
+                              className="text-xs gradient-saffron text-white"
+                              onClick={() => handleJobDone(conv)}
+                            >
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Job Done
+                            </Button>
+                          )}
+                          {conv.completed && (
+                            <span className="text-xs text-green-600 font-medium flex items-center">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Completed
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -259,8 +341,8 @@ export default function Messages() {
                           >
                             <div
                               className={`max-w-[70%] rounded-lg px-4 py-2 ${isOwnMessage
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted"
                                 }`}
                             >
                               <p className="text-sm">{message.text}</p>
@@ -276,28 +358,36 @@ export default function Messages() {
                   </ScrollArea>
 
                   {/* Message Input */}
-                  <form onSubmit={handleSendMessage} className="p-4 border-t">
-                    <div className="flex gap-2">
-                      <Input
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        placeholder="Type a message..."
-                        disabled={!isConnected || sending}
-                        className="flex-1"
-                      />
-                      <Button
-                        type="submit"
-                        disabled={!isConnected || sending || !messageText.trim()}
-                        size="icon"
-                      >
-                        {sending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Send className="h-4 w-4" />
-                        )}
-                      </Button>
+                  {selectedConversation?.completed ? (
+                    <div className="p-4 border-t bg-muted/50 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        This job has been completed. Chat is now disabled.
+                      </p>
                     </div>
-                  </form>
+                  ) : (
+                    <form onSubmit={handleSendMessage} className="p-4 border-t">
+                      <div className="flex gap-2">
+                        <Input
+                          value={messageText}
+                          onChange={(e) => setMessageText(e.target.value)}
+                          placeholder="Type a message..."
+                          disabled={!isConnected || sending}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="submit"
+                          disabled={!isConnected || sending || !messageText.trim()}
+                          size="icon"
+                        >
+                          {sending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  )}
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
@@ -316,6 +406,19 @@ export default function Messages() {
       </main>
 
       <MobileBottomNav />
+
+      {/* Rating Modal */}
+      {ratingConversation && (
+        <RatingModal
+          isOpen={showRatingModal}
+          onClose={() => {
+            setShowRatingModal(false);
+            setRatingConversation(null);
+          }}
+          onSubmit={handleSubmitRating}
+          workerName={ratingConversation.otherUser.name}
+        />
+      )}
     </div>
   );
 }

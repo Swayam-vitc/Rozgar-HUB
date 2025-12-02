@@ -24,8 +24,15 @@ const jobSchema = new mongoose.Schema({
         default: ''
     },
     location: {
-        type: String,
-        required: [true, 'Location is required']
+        state: {
+            type: String,
+            required: [true, 'State is required'],
+            index: true
+        },
+        city: {
+            type: String,
+            required: [true, 'City is required']
+        }
     },
     coordinates: {
         lat: { type: Number },
@@ -81,7 +88,7 @@ const jobSchema = new mongoose.Schema({
 });
 
 // Index for searching jobs
-jobSchema.index({ location: 1, status: 1 });
+jobSchema.index({ 'location.state': 1, status: 1 });
 jobSchema.index({ requiredSkills: 1 });
 jobSchema.index({ employerId: 1 });
 

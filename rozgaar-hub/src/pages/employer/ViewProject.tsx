@@ -126,7 +126,7 @@ export default function ViewProject() {
                                     <MapPin className="h-4 w-4" />
                                     Location
                                 </h3>
-                                <p className="text-muted-foreground">{job.location}</p>
+                                <p className="text-muted-foreground">{job.location?.city}, {job.location?.state}</p>
                             </div>
 
                             {/* Payment Details */}

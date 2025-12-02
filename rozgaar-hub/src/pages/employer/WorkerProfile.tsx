@@ -118,15 +118,21 @@ export default function WorkerProfile() {
 
                                         <div className="flex items-center gap-1 mb-3">
                                             <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                                            <span className="font-semibold text-lg">{worker.rating || 0}</span>
+                                            <span className="font-semibold text-lg">
+                                                {worker.averageRating?.toFixed(1) || worker.rating?.toFixed(1) || "0.0"}
+                                            </span>
                                             <span className="text-sm text-muted-foreground ml-1">
-                                                ({worker.completedJobs || 0} jobs)
+                                                ({worker.totalRatings || worker.completedJobs || 0} ratings)
                                             </span>
                                         </div>
 
                                         <div className="flex items-center gap-1 text-muted-foreground mb-4">
                                             <MapPin className="h-4 w-4" />
-                                            <span>{worker.location || "Location not set"}</span>
+                                            <span>
+                                                {worker.location?.city && worker.location?.state
+                                                    ? `${worker.location.city}, ${worker.location.state}`
+                                                    : "Location not set"}
+                                            </span>
                                         </div>
 
                                         <div className="flex flex-wrap justify-center gap-2 mb-4">
@@ -242,7 +248,7 @@ export default function WorkerProfile() {
                                         </div>
                                         <div className="text-center p-4 bg-muted/50 rounded-lg">
                                             <div className="text-2xl font-bold text-primary">
-                                                {worker.rating || 0}
+                                                {worker.averageRating?.toFixed(1) || worker.rating?.toFixed(1) || "0.0"}
                                             </div>
                                             <div className="text-sm text-muted-foreground mt-1">
                                                 Average Rating

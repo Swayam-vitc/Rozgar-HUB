@@ -6,12 +6,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
+import { StateCitySelector } from "@/components/StateCitySelector";
+import type { Location } from "@/lib/indianStatesAndCities";
 
 export default function EmployerOnboarding() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     companyName: "",
-    location: "",
+    location: { state: "", city: "" } as Location,
     bio: "",
   });
 
@@ -30,7 +32,7 @@ export default function EmployerOnboarding() {
             Set up your profile to start posting jobs
           </p>
         </CardHeader>
-        
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
@@ -44,16 +46,11 @@ export default function EmployerOnboarding() {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                placeholder="City, State"
-                value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                required
-              />
-            </div>
+            <StateCitySelector
+              value={formData.location}
+              onChange={(location) => setFormData({ ...formData, location })}
+              required
+            />
 
             <div className="space-y-2">
               <Label htmlFor="bio">About Your Business</Label>

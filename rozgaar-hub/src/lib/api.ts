@@ -71,6 +71,7 @@ export const employerAPI = {
     deleteJob: (id) => api.delete(`/employer/jobs/${id}`),
     searchWorkers: (params) => api.get('/employer/workers', { params }),
     getWorkerProfile: (workerId) => api.get(`/employer/worker/${workerId}`),
+    getWorkerById: (id: string) => api.get(`/employer/worker/${id}`),
     getAllApplications: () => api.get('/employer/applications'),
     getApplications: (jobId) => api.get(`/employer/applications/${jobId}`),
     updateApplication: (id, data) => api.put(`/employer/applications/${id}`, data),
@@ -78,7 +79,9 @@ export const employerAPI = {
     getAnalytics: () => api.get('/employer/analytics'),
     createJobTitle: (title) => api.post('/employer/job-titles', { title }),
     getJobTitles: () => api.get('/employer/job-titles'),
-    hireWorker: (data) => api.post('/employer/hire', data)
+    hireWorker: (data: any) => api.post('/employer/hire', data),
+    markHireRequestPaid: (id: string) => api.post(`/employer/hire-requests/${id}/pay`),
+    completeJobWithRating: (id: string, data: { rating: number; feedback: string }) => api.post(`/employer/hire-requests/${id}/complete`, data)
 };
 
 // Common API

@@ -163,9 +163,16 @@ export const deleteJob = async (req, res) => {
 // @access  Private (Employer)
 export const searchWorkers = async (req, res) => {
     try {
-        const { skills, location, minRating, verified } = req.query;
+        const { skills, location, minRating, verified, allIndia } = req.query;
+        const employerState = req.user.location?.state;
 
         let query = { role: 'worker' };
+
+        // Location filtering
+        if (!allIndia && employerState) {
+            // Default: show only workers from same state
+            query['location.state'] = employerState;
+        }
 
         if (skills) {
             const skillsArray = skills.split(',');
@@ -173,7 +180,7 @@ export const searchWorkers = async (req, res) => {
         }
 
         if (location) {
-            query.location = { $regex: location, $options: 'i' };
+            query['location.city'] = { $regex: location, $options: 'i' };
         }
 
         if (minRating) {
@@ -184,15 +191,41 @@ export const searchWorkers = async (req, res) => {
             query.verified = true;
         }
 
-        const workers = await User.find(query)
+        let workers = await User.find(query)
             .select('-password')
-            .sort({ rating: -1, completedJobs: -1 })
-            .limit(50);
+            .limit(100);
+
+        // Proximity-based sorting
+        if (employerState) {
+            const employerCity = req.user.location?.city;
+
+            workers.sort((a, b) => {
+                const aState = a.location?.state || '';
+                const aCity = a.location?.city || '';
+                const bState = b.location?.state || '';
+                const bCity = b.location?.city || '';
+
+                // Same city = highest priority
+                if (aCity === employerCity && bCity !== employerCity) return -1;
+                if (bCity === employerCity && aCity !== employerCity) return 1;
+
+                // Same state = medium priority
+                if (aState === employerState && bState !== employerState) return -1;
+                if (bState === employerState && aState !== employerState) return 1;
+
+                // Sort by rating if same proximity
+                return b.rating - a.rating;
+            });
+        }
 
         res.json({
             success: true,
             count: workers.length,
-            workers
+            workers,
+            filters: {
+                state: allIndia ? 'All India' : employerState,
+                allIndia: allIndia === 'true'
+            }
         });
     } catch (error) {
         res.status(500).json({

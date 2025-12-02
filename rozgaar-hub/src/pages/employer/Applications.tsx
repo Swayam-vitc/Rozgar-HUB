@@ -46,14 +46,22 @@ interface Application {
         profilePhoto: string;
         skills: string[];
         rating: number;
+        averageRating?: number;
+        totalRatings?: number;
         completedJobs: number;
         verified: boolean;
-        location: string;
+        location: {
+            state: string;
+            city: string;
+        };
     };
     jobId: {
         _id: string;
         title: string;
-        location: string;
+        location: {
+            state: string;
+            city: string;
+        };
         payType: string;
         payAmount: number;
         status: string;
@@ -105,8 +113,8 @@ export default function Applications() {
         setHireForm({
             jobTitle: application.jobId.title || "",
             jobDescription: "",
-            state: "",
-            city: application.jobId.location || "",
+            state: application.jobId.location?.state || "",
+            city: application.jobId.location?.city || "",
             salaryType: application.jobId.payType || "daily",
             salaryAmount: application.jobId.payAmount?.toString() || "",
             message: ""
@@ -232,10 +240,10 @@ export default function Applications() {
                                                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                                         <div className="flex items-center gap-1">
                                                             <Star className="h-3 w-3 text-yellow-500 fill-yellow-500" />
-                                                            <span>{application.workerId.rating || 0}</span>
+                                                            <span>{application.workerId.averageRating?.toFixed(1) || application.workerId.rating?.toFixed(1) || "0.0"}</span>
                                                         </div>
                                                         <span>•</span>
-                                                        <span>{application.workerId.completedJobs || 0} jobs</span>
+                                                        <span>{application.workerId.totalRatings || application.workerId.completedJobs || 0} ratings</span>
                                                     </div>
                                                 </div>
                                                 {application.workerId.verified && (
@@ -260,10 +268,14 @@ export default function Applications() {
 
                                         <CardContent className="flex-1 space-y-3">
                                             {/* Location */}
-                                            {application.workerId.location && (
+                                            {(application.workerId.location?.city || application.workerId.location?.state) && (
                                                 <div className="flex items-center gap-2 text-sm">
                                                     <MapPin className="h-4 w-4 text-muted-foreground" />
-                                                    <span>{application.workerId.location}</span>
+                                                    <span>
+                                                        {application.workerId.location?.city && application.workerId.location?.state
+                                                            ? `${application.workerId.location.city}, ${application.workerId.location.state}`
+                                                            : "Location not set"}
+                                                    </span>
                                                 </div>
                                             )}
 

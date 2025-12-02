@@ -86,8 +86,8 @@ export default function Workers() {
     setHireForm({
       jobTitle: "",
       jobDescription: "",
-      state: "",
-      city: worker.location || "",
+      state: worker.location?.state || "",
+      city: worker.location?.city || "",
       salaryType: "daily",
       salaryAmount: worker.dailyRate?.toString() || "",
       message: ""
@@ -187,14 +187,16 @@ export default function Workers() {
                       <h3 className="font-bold text-lg mb-1">{worker.name}</h3>
                       <div className="flex items-center gap-1 mb-2">
                         <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                        <span className="font-semibold">{worker.rating || 0}</span>
+                        <span className="font-semibold">{worker.averageRating?.toFixed(1) || worker.rating?.toFixed(1) || "0.0"}</span>
                         <span className="text-sm text-muted-foreground">
-                          ({worker.completedJobs || 0} jobs)
+                          ({worker.totalRatings || worker.completedJobs || 0} ratings)
                         </span>
                       </div>
                       <div className="flex items-center gap-1 text-sm text-muted-foreground mb-3">
                         <MapPin className="h-4 w-4" />
-                        {worker.location || "Location not set"}
+                        {worker.location?.city && worker.location?.state
+                          ? `${worker.location.city}, ${worker.location.state}`
+                          : "Location not set"}
                       </div>
                     </div>
 

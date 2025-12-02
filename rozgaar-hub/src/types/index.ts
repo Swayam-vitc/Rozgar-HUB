@@ -1,5 +1,10 @@
 export type UserRole = "worker" | "employer" | null;
 
+export interface Location {
+  state: string;
+  city: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -14,7 +19,7 @@ export interface User {
 export interface WorkerProfile extends User {
   role: "worker";
   skills: string[];
-  location: string;
+  location: Location;
   hourlyRate: number;
   dailyRate: number;
   bio: string;
@@ -30,7 +35,7 @@ export interface WorkerProfile extends User {
 export interface EmployerProfile extends User {
   role: "employer";
   companyName: string;
-  location: string;
+  location: Location;
   projectsPosted: number;
   rating: number;
 }
@@ -43,7 +48,7 @@ export interface Job {
   employerId: string;
   employerName: string;
   employerPhoto?: string;
-  location: string;
+  location: Location;
   coordinates?: { lat: number; lng: number };
   payAmount: number;
   payType: "hourly" | "daily" | "fixed";

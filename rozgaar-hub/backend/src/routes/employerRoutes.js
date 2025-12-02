@@ -16,6 +16,7 @@ import {
     getWorkerById,
     hireWorker
 } from '../controllers/employerController.js';
+import { markAsPaid, completeJobWithRating } from '../controllers/ratingController.js';
 import { protect, requireEmployer } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -39,5 +40,9 @@ router.post('/job-titles', createCustomJobTitle);
 router.get('/job-titles', getCustomJobTitles);
 router.get('/worker/:id', getWorkerById);
 router.post('/hire', hireWorker);
+
+// Payment and rating routes
+router.post('/hire-requests/:id/pay', markAsPaid);
+router.post('/hire-requests/:id/complete', completeJobWithRating);
 
 export default router;

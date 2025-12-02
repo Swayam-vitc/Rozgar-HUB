@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect, useRef } from "react";
-import { Send, Loader2, MessageCircle } from "lucide-react";
+import { Send, Loader2, MessageCircle, Star } from "lucide-react";
 import { messageAPI } from "@/lib/api";
 import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "sonner";
@@ -39,6 +39,9 @@ interface Conversation {
     timestamp: string;
   };
   unreadCount: number;
+  completed?: boolean;
+  rating?: number;
+  feedback?: string;
 }
 
 export default function Messages() {
@@ -64,7 +67,7 @@ export default function Messages() {
     // Listen for new messages
     socket.on("receive-message", (data: any) => {
       if (selectedConversation && data.message.connectionId === selectedConversation.connectionId) {
-        setMessages(prev => [prev, data.message]);
+        setMessages(prev => [...prev, data.message]);
         scrollToBottom();
 
         // Mark as read
@@ -222,6 +225,21 @@ export default function Messages() {
                         <p className="text-xs text-muted-foreground mt-1">
                           {format(new Date(conv.lastMessage.timestamp), "MMM d, h:mm a")}
                         </p>
+
+                        {/* Rating Display */}
+                        {conv.completed && conv.rating && (
+                          <div className="flex items-center gap-1 mt-2">
+                            <div className="flex">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-3 w-3 ${i < conv.rating! ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs text-muted-foreground">({conv.rating}/5)</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -259,8 +277,8 @@ export default function Messages() {
                           >
                             <div
                               className={`max-w-[70%] rounded-lg px-4 py-2 ${isOwnMessage
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted"
                                 }`}
                             >
                               <p className="text-sm">{message.text}</p>
@@ -276,28 +294,57 @@ export default function Messages() {
                   </ScrollArea>
 
                   {/* Message Input */}
-                  <form onSubmit={handleSendMessage} className="p-4 border-t">
-                    <div className="flex gap-2">
-                      <Input
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        placeholder="Type a message..."
-                        disabled={!isConnected || sending}
-                        className="flex-1"
-                      />
-                      <Button
-                        type="submit"
-                        disabled={!isConnected || sending || !messageText.trim()}
-                        size="icon"
-                      >
-                        {sending ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Send className="h-4 w-4" />
-                        )}
-                      </Button>
+                  {selectedConversation?.completed ? (
+                    <div className="p-4 border-t bg-muted/50">
+                      <p className="text-sm text-muted-foreground text-center mb-2">
+                        This job has been completed. Chat is now disabled.
+                      </p>
+                      {selectedConversation.rating && (
+                        <div className="bg-card p-3 rounded-lg border">
+                          <p className="text-xs font-medium mb-2">Your Rating:</p>
+                          <div className="flex items-center gap-2">
+                            <div className="flex">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  className={`h-4 w-4 ${i < selectedConversation.rating! ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-sm font-medium">{selectedConversation.rating}/5</span>
+                          </div>
+                          {selectedConversation.feedback && (
+                            <p className="text-xs text-muted-foreground mt-2">
+                              "{selectedConversation.feedback}"
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </form>
+                  ) : (
+                    <form onSubmit={handleSendMessage} className="p-4 border-t">
+                      <div className="flex gap-2">
+                        <Input
+                          value={messageText}
+                          onChange={(e) => setMessageText(e.target.value)}
+                          placeholder="Type a message..."
+                          disabled={!isConnected || sending}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="submit"
+                          disabled={!isConnected || sending || !messageText.trim()}
+                          size="icon"
+                        >
+                          {sending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Send className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                    </form>
+                  )}
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">

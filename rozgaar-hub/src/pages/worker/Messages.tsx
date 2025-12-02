@@ -5,150 +5,311 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, Paperclip } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Send, Loader2, MessageCircle } from "lucide-react";
+import { messageAPI } from "@/lib/api";
+import { useSocket } from "@/contexts/SocketContext";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { useAuthStore } from "@/store/authStore";
 
-const conversations = [
-  {
-    id: "1",
-    name: "Suresh Enterprises",
-    lastMessage: "Can you start tomorrow?",
-    time: "2m ago",
-    unread: 2,
-    photo: "https://api.dicebear.com/7.x/initials/svg?seed=SE",
-  },
-  {
-    id: "2",
-    name: "Mumbai Builders",
-    lastMessage: "Payment processed",
-    time: "1h ago",
-    unread: 0,
-    photo: "https://api.dicebear.com/7.x/initials/svg?seed=MB",
-  },
-];
+interface Message {
+  _id: string;
+  text: string;
+  senderId: {
+    _id: string;
+    name: string;
+    profilePhoto?: string;
+  };
+  createdAt: string;
+}
 
-const messages = [
-  {
-    id: "1",
-    sender: "employer",
-    text: "Hello! Are you available for a construction project?",
-    time: "10:30 AM",
-  },
-  {
-    id: "2",
-    sender: "me",
-    text: "Yes, I'm available. What are the project details?",
-    time: "10:32 AM",
-  },
-  {
-    id: "3",
-    sender: "employer",
-    text: "It's a 3-day project in Andheri. ₹500/day. Can you start tomorrow?",
-    time: "10:35 AM",
-  },
-];
+interface Conversation {
+  _id: string;
+  connectionId: string;
+  jobTitle: string;
+  otherUser: {
+    _id: string;
+    name: string;
+    profilePhoto?: string;
+    role: string;
+  };
+  lastMessage: {
+    text: string;
+    timestamp: string;
+  };
+  unreadCount: number;
+}
 
 export default function Messages() {
-  const [selectedChat, setSelectedChat] = useState("1");
-  const [message, setMessage] = useState("");
+  const { user } = useAuthStore();
+  const { socket, isConnected } = useSocket();
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [messageText, setMessageText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Fetch conversations on mount
+  useEffect(() => {
+    fetchConversations();
+  }, []);
+
+  // Socket.io event listeners
+  useEffect(() => {
+    if (!socket || !isConnected) return;
+
+    // Listen for new messages
+    socket.on("receive-message", (data: any) => {
+      if (selectedConversation && data.message.connectionId === selectedConversation.connectionId) {
+        setMessages(prev => [prev, data.message]);
+        scrollToBottom();
+
+        // Mark as read
+        messageAPI.markAsRead(selectedConversation.connectionId);
+      }
+
+      // Update conversation list
+      fetchConversations();
+    });
+
+    socket.on("new-message-notification", () => {
+      fetchConversations();
+    });
+
+    return () => {
+      socket.off("receive-message");
+      socket.off("new-message-notification");
+    };
+  }, [socket, isConnected, selectedConversation]);
+
+  // Auto scroll to bottom
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const fetchConversations = async () => {
+    try {
+      setLoading(true);
+      const response = await messageAPI.getConversations() as any;
+      if (response.success) {
+        setConversations(response.conversations);
+      }
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      toast.error("Failed to load conversations");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchMessages = async (connectionId: string) => {
+    try {
+      const response = await messageAPI.getMessages(connectionId) as any;
+      if (response.success) {
+        setMessages(response.messages);
+
+        // Mark as read
+        await messageAPI.markAsRead(connectionId);
+        fetchConversations(); // Refresh to update unread count
+      }
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      toast.error("Failed to load messages");
+    }
+  };
+
+  const handleSelectConversation = async (conversation: Conversation) => {
+    setSelectedConversation(conversation);
+    await fetchMessages(conversation.connectionId);
+
+    // Join Socket.io room
+    if (socket) {
+      socket.emit("join-conversation", conversation.connectionId);
+    }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!messageText.trim() || !selectedConversation || !socket) return;
+
+    const text = messageText.trim();
+    setMessageText("");
+    setSending(true);
+
+    try {
+      // Send via Socket.io
+      socket.emit("send-message", {
+        connectionId: selectedConversation.connectionId,
+        text
+      });
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast.error("Failed to send message");
+    } finally {
+      setSending(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Loading messages...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-background">
       <WorkerSidebar />
-      
+
       <main className="flex-1 md:ml-64 pb-20 md:pb-0">
-        <div className="h-screen flex">
-          {/* Conversations List */}
-          <div className="w-full md:w-80 border-r">
-            <div className="p-4 border-b">
-              <h2 className="text-xl font-bold">Messages</h2>
-            </div>
-            <ScrollArea className="h-[calc(100vh-120px)]">
-              {conversations.map((conv) => (
-                <div
-                  key={conv.id}
-                  onClick={() => setSelectedChat(conv.id)}
-                  className={`flex items-center gap-3 p-4 cursor-pointer hover:bg-muted transition-colors ${
-                    selectedChat === conv.id ? "bg-muted" : ""
-                  }`}
-                >
-                  <Avatar>
-                    <AvatarImage src={conv.photo} />
-                    <AvatarFallback>{conv.name[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-semibold truncate">{conv.name}</h3>
-                      <span className="text-xs text-muted-foreground">{conv.time}</span>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate">
-                      {conv.lastMessage}
-                    </p>
-                  </div>
-                  {conv.unread > 0 && (
-                    <div className="bg-primary text-primary-foreground rounded-full h-5 w-5 flex items-center justify-center text-xs">
-                      {conv.unread}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </ScrollArea>
+        <div className="h-screen flex flex-col">
+          {/* Header */}
+          <div className="p-4 md:p-6 border-b">
+            <h1 className="text-2xl md:text-3xl font-bold">Messages</h1>
+            <p className="text-muted-foreground text-sm">
+              {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
+            </p>
           </div>
 
-          {/* Chat Area */}
-          <div className="flex-1 flex flex-col hidden md:flex">
-            <div className="p-4 border-b flex items-center gap-3">
-              <Avatar>
-                <AvatarImage src={conversations[0].photo} />
-                <AvatarFallback>SE</AvatarFallback>
-              </Avatar>
-              <div>
-                <h3 className="font-semibold">{conversations[0].name}</h3>
-                <p className="text-sm text-muted-foreground">Active now</p>
-              </div>
-            </div>
-
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {messages.map((msg) => (
+          <div className="flex-1 flex overflow-hidden">
+            {/* Conversations List */}
+            <div className="w-full md:w-80 border-r overflow-y-auto">
+              {conversations.length === 0 ? (
+                <div className="p-8 text-center">
+                  <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <p className="text-muted-foreground">No conversations yet</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Start chatting when you connect with employers
+                  </p>
+                </div>
+              ) : (
+                conversations.map((conv) => (
                   <div
-                    key={msg.id}
-                    className={`flex ${msg.sender === "me" ? "justify-end" : "justify-start"}`}
-                  >
-                    <div
-                      className={`max-w-xs md:max-w-md p-3 rounded-lg ${
-                        msg.sender === "me"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
+                    key={conv._id}
+                    onClick={() => handleSelectConversation(conv)}
+                    className={`p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors ${selectedConversation?._id === conv._id ? "bg-muted" : ""
                       }`}
-                    >
-                      <p>{msg.text}</p>
-                      <p className="text-xs mt-1 opacity-70">{msg.time}</p>
+                  >
+                    <div className="flex items-start gap-3">
+                      <Avatar>
+                        <AvatarImage src={conv.otherUser.profilePhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${conv.otherUser.name}`} />
+                        <AvatarFallback>{conv.otherUser.name.substring(0, 2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h3 className="font-semibold truncate">{conv.otherUser.name}</h3>
+                          {conv.unreadCount > 0 && (
+                            <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5">
+                              {conv.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">{conv.jobTitle}</p>
+                        <p className="text-sm text-muted-foreground truncate mt-1">
+                          {conv.lastMessage.text}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {format(new Date(conv.lastMessage.timestamp), "MMM d, h:mm a")}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                ))
+              )}
+            </div>
 
-            <div className="p-4 border-t">
-              <div className="flex gap-2">
-                <Button variant="outline" size="icon">
-                  <Paperclip className="h-4 w-4" />
-                </Button>
-                <Input
-                  placeholder="Type a message..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter" && message.trim()) {
-                      setMessage("");
-                    }
-                  }}
-                />
-                <Button className="gradient-saffron text-white">
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
+            {/* Chat Window */}
+            <div className="flex-1 flex flex-col">
+              {selectedConversation ? (
+                <>
+                  {/* Chat Header */}
+                  <div className="p-4 border-b flex items-center gap-3">
+                    <Avatar>
+                      <AvatarImage src={selectedConversation.otherUser.profilePhoto} />
+                      <AvatarFallback>
+                        {selectedConversation.otherUser.name.substring(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h2 className="font-semibold">{selectedConversation.otherUser.name}</h2>
+                      <p className="text-sm text-muted-foreground">{selectedConversation.jobTitle}</p>
+                    </div>
+                  </div>
+
+                  {/* Messages */}
+                  <ScrollArea className="flex-1 p-4">
+                    <div className="space-y-4">
+                      {messages.map((message) => {
+                        const isOwnMessage = message.senderId._id === user?._id;
+                        return (
+                          <div
+                            key={message._id}
+                            className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                          >
+                            <div
+                              className={`max-w-[70%] rounded-lg px-4 py-2 ${isOwnMessage
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted"
+                                }`}
+                            >
+                              <p className="text-sm">{message.text}</p>
+                              <p className={`text-xs mt-1 ${isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                                {format(new Date(message.createdAt), "h:mm a")}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div ref={messagesEndRef} />
+                    </div>
+                  </ScrollArea>
+
+                  {/* Message Input */}
+                  <form onSubmit={handleSendMessage} className="p-4 border-t">
+                    <div className="flex gap-2">
+                      <Input
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        placeholder="Type a message..."
+                        disabled={!isConnected || sending}
+                        className="flex-1"
+                      />
+                      <Button
+                        type="submit"
+                        disabled={!isConnected || sending || !messageText.trim()}
+                        size="icon"
+                      >
+                        {sending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </form>
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center">
+                    <MessageCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                    <p className="text-xl font-semibold mb-2">Select a conversation</p>
+                    <p className="text-muted-foreground">
+                      Choose a conversation from the left to start messaging
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

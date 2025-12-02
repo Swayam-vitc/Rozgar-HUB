@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { X, MapPin, Loader2, Check, ChevronsUpDown, Plus } from "lucide-react";
 import { employerAPI } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { indianLocations } from "@/lib/locationData";
 
 const skillOptions = ["Construction", "Plumbing", "Electrical", "Painting", "Carpentry", "Cleaning"];
 
@@ -35,38 +36,6 @@ const predefinedJobRoles = [
   "Tailor",
   "Beautician"
 ];
-
-const indianLocations: { [key: string]: string[] } = {
-  "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore", "Kurnool"],
-  "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang"],
-  "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat", "Nagaon"],
-  "Bihar": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur", "Darbhanga"],
-  "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Korba", "Durg"],
-  "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa", "Ponda"],
-  "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot", "Gandhinagar"],
-  "Haryana": ["Gurugram", "Faridabad", "Panipat", "Ambala", "Karnal"],
-  "Himachal Pradesh": ["Shimla", "Dharamshala", "Solan", "Mandi", "Kullu"],
-  "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro", "Deoghar"],
-  "Karnataka": ["Bangalore", "Mysore", "Hubli", "Mangalore", "Belgaum"],
-  "Kerala": ["Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur", "Kollam"],
-  "Madhya Pradesh": ["Bhopal", "Indore", "Gwalior", "Jabalpur", "Ujjain"],
-  "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik", "Aurangabad"],
-  "Manipur": ["Imphal", "Thoubal", "Bishnupur", "Churachandpur"],
-  "Meghalaya": ["Shillong", "Tura", "Jowai", "Nongstoin"],
-  "Mizoram": ["Aizawl", "Lunglei", "Champhai", "Serchhip"],
-  "Nagaland": ["Kohima", "Dimapur", "Mokokchung", "Tuensang"],
-  "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Puri", "Berhampur"],
-  "Punjab": ["Chandigarh", "Ludhiana", "Amritsar", "Jalandhar", "Patiala"],
-  "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota", "Ajmer"],
-  "Sikkim": ["Gangtok", "Namchi", "Gyalshing", "Mangan"],
-  "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem", "Tiruchirappalli"],
-  "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar", "Khammam"],
-  "Tripura": ["Agartala", "Udaipur", "Dharmanagar", "Kailasahar"],
-  "Uttar Pradesh": ["Lucknow", "Kanpur", "Varanasi", "Agra", "Noida"],
-  "Uttarakhand": ["Dehradun", "Haridwar", "Roorkee", "Haldwani", "Rishikesh"],
-  "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Asansol", "Siliguri"],
-  "Delhi": ["New Delhi", "North Delhi", "South Delhi", "East Delhi", "West Delhi"]
-};
 
 export default function PostJob() {
   const navigate = useNavigate();

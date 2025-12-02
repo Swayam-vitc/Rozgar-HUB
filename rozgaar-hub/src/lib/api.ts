@@ -96,4 +96,14 @@ export const commonAPI = {
     deleteReadNotifications: () => api.delete('/notifications/read')
 };
 
+
+// Message API
+export const messageAPI = {
+    sendMessage: (data: any) => api.post('/messages/send', data),
+    getMessages: (connectionId: string, page = 1) => api.get(`/messages/${connectionId}`, { params: { page } }),
+    getConversations: () => api.get('/messages/conversations'),
+    markAsRead: (connectionId: string) => api.put('/messages/mark-read', { connectionId }),
+    getUnreadCount: () => api.get('/messages/unread-count')
+};
+
 export default api;

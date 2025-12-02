@@ -1,13 +1,16 @@
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import connectDB from './config/db.js';
+import { initializeSocket } from './services/socketService.js';
 
 // Import routes
 import authRoutes from './routes/authRoutes.js';
 import workerRoutes from './routes/workerRoutes.js';
 import employerRoutes from './routes/employerRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import messageRoutes from './routes/messageRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +48,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/worker', workerRoutes);
 app.use('/api/employer', employerRoutes);
+app.use('/api/messages', messageRoutes);
 app.use('/api', userRoutes);
 
 // 404 handler
@@ -65,14 +69,19 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
+// Create HTTP server and initialize Socket.io
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+const io = initializeSocket(httpServer);
+
+// Start server
+httpServer.listen(PORT, () => {
     console.log(`\n🚀 RozgaarHub Backend Server`);
     console.log(`📡 Running on port ${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
     console.log(`🔗 API URL: http://localhost:${PORT}/api`);
-    console.log(`💚 Health check: http://localhost:${PORT}/api/health\n`);
+    console.log(`💚 Health check: http://localhost:${PORT}/api/health`);
+    console.log(`🔌 Socket.io initialized for real-time messaging\n`);
 });
 
 export default app;

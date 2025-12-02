@@ -4,7 +4,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { JobCard } from "@/components/JobCard";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { workerAPI } from "@/lib/api";
 import {
@@ -14,21 +14,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { getAllStates, getCitiesForState, matchesLocationFilter } from "@/lib/locationData";
 
 export default function Jobs() {
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [payType, setPayType] = useState<string>("all");
+  const [selectedState, setSelectedState] = useState<string>("");
+  const [selectedCity, setSelectedCity] = useState<string>("");
   const [appliedJobs, setAppliedJobs] = useState<Set<string>>(new Set());
 
   const fetchJobs = async () => {
     try {
       setLoading(true);
       const params: any = { status: 'open' };
-      if (searchQuery) {
-        params.location = searchQuery; // Simple search by location for now
-      }
 
       const response = await workerAPI.browseJobs(params) as any;
       if (response.success) {
@@ -59,7 +59,7 @@ export default function Jobs() {
   useEffect(() => {
     fetchJobs();
     fetchMyApplications();
-  }, [searchQuery]); // Re-fetch when search query changes (debounce ideally)
+  }, []); // Fetch only once on mount
 
   const handleApply = async (jobId: string) => {
     try {
@@ -72,10 +72,46 @@ export default function Jobs() {
     }
   };
 
+  // Handle state change - reset city when state changes
+  const handleStateChange = (value: string) => {
+    setSelectedState(value);
+    setSelectedCity(""); // Reset city when state changes
+  };
+
+  // Handle city change
+  const handleCityChange = (value: string) => {
+    setSelectedCity(value);
+  };
+
+  // Clear all location filters
+  const clearLocationFilters = () => {
+    setSelectedState("");
+    setSelectedCity("");
+  };
+
+  // Client-side filtering
   const filteredJobs = jobs.filter((job) => {
+    // Filter by pay type
     const matchesPayType = payType === "all" || job.payType === payType;
-    return matchesPayType;
+
+    // Filter by location (state and/or city)
+    const matchesLocation = matchesLocationFilter(
+      job.location || "",
+      selectedState,
+      selectedCity
+    );
+
+    // Filter by search query (searches in location, title, description)
+    const matchesSearch = !searchQuery ||
+      job.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    return matchesPayType && matchesLocation && matchesSearch;
   });
+
+  // Get available cities for selected state
+  const availableCities = selectedState ? getCitiesForState(selectedState) : [];
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -96,7 +132,7 @@ export default function Jobs() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search by location..."
+                  placeholder="Search by location, title, or description..."
                   className="pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -116,10 +152,63 @@ export default function Jobs() {
               </Select>
             </div>
 
+            {/* Location Filters */}
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
+                <Select value={selectedState || "all-states"} onValueChange={(value) => handleStateChange(value === "all-states" ? "" : value)}>
+                  <SelectTrigger>
+                    <MapPin className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Select State" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-states">All States</SelectItem>
+                    {getAllStates().map((state) => (
+                      <SelectItem key={state} value={state}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <Select
+                  value={selectedCity || "all-cities"}
+                  onValueChange={(value) => handleCityChange(value === "all-cities" ? "" : value)}
+                  disabled={!selectedState}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={selectedState ? "Select City" : "Select State First"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all-cities">All Cities</SelectItem>
+                    {availableCities.map((city) => (
+                      <SelectItem key={city} value={city}>
+                        {city}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {(selectedState || selectedCity) && (
+                <Button
+                  variant="outline"
+                  onClick={clearLocationFilters}
+                  className="sm:w-auto"
+                >
+                  Clear Location
+                </Button>
+              )}
+            </div>
+
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
                 {filteredJobs.length} jobs found
               </p>
+              {(selectedState || selectedCity) && (
+                <p className="text-sm text-muted-foreground">
+                  Filtering by: {selectedCity && selectedState ? `${selectedCity}, ${selectedState}` : selectedState || selectedCity}
+                </p>
+              )}
             </div>
           </div>
 
@@ -129,7 +218,11 @@ export default function Jobs() {
               <div className="col-span-full text-center py-8">Loading jobs...</div>
             ) : filteredJobs.length === 0 ? (
               <div className="col-span-full text-center py-12">
-                <p className="text-muted-foreground">No jobs found matching your criteria.</p>
+                <p className="text-muted-foreground">
+                  {(selectedState || selectedCity)
+                    ? "No jobs available in this location."
+                    : "No jobs found matching your criteria."}
+                </p>
               </div>
             ) : (
               filteredJobs.map((job) => (

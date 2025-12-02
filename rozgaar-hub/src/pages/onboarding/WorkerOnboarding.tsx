@@ -7,7 +7,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
+import { authAPI } from "@/lib/api";
+import { useAuthStore } from "@/store/authStore";
 
 const commonSkills = [
   "Construction",
@@ -24,8 +26,10 @@ const commonSkills = [
 
 export default function WorkerOnboarding() {
   const navigate = useNavigate();
+  const { setUser } = useAuthStore();
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [customSkill, setCustomSkill] = useState("");
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     location: "",
     hourlyRate: "",
@@ -46,10 +50,42 @@ export default function WorkerOnboarding() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Profile completed! Welcome to RozgaarHub!");
-    navigate("/worker/dashboard");
+
+    if (selectedSkills.length === 0) {
+      toast.error("Please select at least one skill");
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const profileData = {
+        skills: selectedSkills,
+        location: formData.location,
+        hourlyRate: Number(formData.hourlyRate) || 0,
+        dailyRate: Number(formData.dailyRate) || 0,
+        bio: formData.bio,
+      };
+
+      const response = await authAPI.updateProfile(profileData) as any;
+
+      if (response.success) {
+        // Update user in auth store
+        if (response.user) {
+          setUser(response.user);
+        }
+
+        toast.success("Profile completed! Welcome to RozgaarHub!");
+        navigate("/worker/dashboard");
+      }
+    } catch (error: any) {
+      console.error("Error saving profile:", error);
+      toast.error(error.message || "Failed to save profile. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -61,7 +97,7 @@ export default function WorkerOnboarding() {
             Help employers find you by completing your profile
           </p>
         </CardHeader>
-        
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Skills Selection */}
@@ -79,7 +115,7 @@ export default function WorkerOnboarding() {
                   </Badge>
                 ))}
               </div>
-              
+
               {/* Selected Skills */}
               {selectedSkills.length > 0 && (
                 <div className="flex flex-wrap gap-2 p-3 bg-muted rounded-lg">
@@ -94,7 +130,7 @@ export default function WorkerOnboarding() {
                   ))}
                 </div>
               )}
-              
+
               {/* Custom Skill Input */}
               <div className="flex gap-2">
                 <Input
@@ -155,8 +191,20 @@ export default function WorkerOnboarding() {
               />
             </div>
 
-            <Button type="submit" className="w-full gradient-saffron text-white" size="lg">
-              Complete Profile
+            <Button
+              type="submit"
+              className="w-full gradient-saffron text-white"
+              size="lg"
+              disabled={saving}
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving Profile...
+                </>
+              ) : (
+                "Complete Profile"
+              )}
             </Button>
           </form>
         </CardContent>

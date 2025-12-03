@@ -14,20 +14,23 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
-
-const navigation = [
-  { name: "Dashboard", href: "/employer/dashboard", icon: LayoutDashboard },
-  { name: "Post Job", href: "/employer/post-job", icon: PlusCircle },
-  { name: "My Projects", href: "/employer/projects", icon: FolderOpen },
-  { name: "Workers", href: "/employer/workers", icon: Users },
-  { name: "Applications", href: "/employer/applications", icon: FileText },
-  { name: "Payments", href: "/employer/payments", icon: CreditCard },
-  { name: "Messages", href: "/employer/messages", icon: MessageSquare },
-];
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 export function EmployerSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const { logout } = useAuthStore();
+  const { t } = useTranslation();
+
+  const navigation = [
+    { name: t('nav.dashboard'), href: "/employer/dashboard", icon: LayoutDashboard },
+    { name: t('nav.postJob'), href: "/employer/post-job", icon: PlusCircle },
+    { name: t('nav.myProjects'), href: "/employer/projects", icon: FolderOpen },
+    { name: t('nav.workers'), href: "/employer/workers", icon: Users },
+    { name: t('nav.applications'), href: "/employer/applications", icon: FileText },
+    { name: t('nav.payments'), href: "/employer/payments", icon: CreditCard },
+    { name: t('nav.messages'), href: "/employer/messages", icon: MessageSquare },
+  ];
 
   return (
     <>
@@ -62,7 +65,7 @@ export function EmployerSidebar() {
           <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
             {navigation.map((item) => (
               <NavLink
-                key={item.name}
+                key={item.href}
                 to={item.href}
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
                 activeClassName="bg-primary/10 text-primary font-medium"
@@ -76,6 +79,10 @@ export function EmployerSidebar() {
 
           {/* Logout */}
           <div className="border-t p-4">
+            <div className="flex items-center justify-between mb-4 px-2">
+              <span className="text-sm font-medium">{t('language')}</span>
+              <LanguageSwitcher />
+            </div>
             <Button
               variant="outline"
               className="w-full"
@@ -84,7 +91,7 @@ export function EmployerSidebar() {
                 window.location.href = "/";
               }}
             >
-              Logout
+              {t('nav.logout')}
             </Button>
           </div>
         </div>

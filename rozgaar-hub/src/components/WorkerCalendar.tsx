@@ -5,6 +5,7 @@ import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import { Card } from "@/components/ui/card";
 import { CalendarEvent } from "@/types";
+import { useTranslation } from "react-i18next";
 
 interface WorkerCalendarProps {
   events?: CalendarEvent[];
@@ -12,6 +13,7 @@ interface WorkerCalendarProps {
 
 export const WorkerCalendar = ({ events = [] }: WorkerCalendarProps) => {
   const calendarRef = useRef<FullCalendar>(null);
+  const { t } = useTranslation();
 
   return (
     <Card className="p-4">
@@ -32,7 +34,7 @@ export const WorkerCalendar = ({ events = [] }: WorkerCalendarProps) => {
         weekends={true}
         height="auto"
         eventClick={(info) => {
-          alert(`Job: ${info.event.title}`);
+          alert(t('jobAlert', { title: info.event.title }));
         }}
       />
     </Card>

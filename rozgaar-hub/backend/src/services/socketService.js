@@ -11,7 +11,28 @@ const userSockets = new Map(); // Map userId to socketId
 export const initializeSocket = (server) => {
     io = new Server(server, {
         cors: {
-            origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+            origin: function (origin, callback) {
+                // Allow requests with no origin (like mobile apps)
+                if (!origin) return callback(null, true);
+
+                // Allow localhost and local network IPs
+                const allowedOrigins = [
+                    'http://localhost:8080',
+                    'http://127.0.0.1:8080',
+                    process.env.CORS_ORIGIN
+                ];
+
+                // Allow any IP in the 192.168.x.x range on port 8080
+                if (origin.match(/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:8080$/)) {
+                    return callback(null, true);
+                }
+
+                if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+                    callback(null, true);
+                } else {
+                    callback(new Error('Not allowed by CORS'));
+                }
+            },
             credentials: true
         }
     });
@@ -81,11 +102,27 @@ export const initializeSocket = (server) => {
         // Send message
         socket.on('send-message', async (data) => {
             try {
+                console.log('🔵 Received send-message event:', {
+                    userId: socket.userId,
+                    connectionId: data?.connectionId,
+                    text: typeof data?.text === 'string' ? data.text.substring(0, 50) : 'No text'
+                });
+            } catch (err) {
+                console.error('Error logging message:', err);
+            }
+
+            if (!data) {
+                socket.emit('error', { message: 'No data provided' });
+                return;
+            }
+
+            try {
                 const { connectionId, text } = data;
                 const senderId = socket.userId;
 
                 // Validate
                 if (!connectionId || !text) {
+                    console.log('❌ Invalid message data');
                     socket.emit('error', { message: 'Invalid message data' });
                     return;
                 }
@@ -118,6 +155,8 @@ export const initializeSocket = (server) => {
                     receiverId,
                     text: text.trim()
                 });
+
+                console.log('✅ Message created in database:', message._id);
 
                 await message.populate('senderId', 'name profilePhoto');
 

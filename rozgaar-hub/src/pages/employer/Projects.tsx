@@ -63,7 +63,9 @@ export default function Projects() {
                         <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1">
                             <MapPin className="h-4 w-4" />
-                            {job.location?.city}, {job.location?.state}
+                            {typeof job.location === 'object'
+                              ? `${job.location.city}, ${job.location.state}`
+                              : job.location || "Location"}
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-4 w-4" />

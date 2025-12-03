@@ -48,7 +48,11 @@ export const JobCard = ({ job, onApply, isApplied = false }: JobCardProps) => {
           <div className="space-y-2 text-sm text-muted-foreground">
             <div className="flex items-center gap-1 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4" />
-              <span>{job.location?.city && job.location?.state ? `${job.location.city}, ${job.location.state}` : 'Location not specified'}</span>
+              <span>
+                {typeof job.location === 'object' && job.location
+                  ? `${(job.location as any).city}, ${(job.location as any).state}`
+                  : (job.location as any) || 'Location not specified'}
+              </span>
             </div>
 
             <div className="flex items-center gap-2">

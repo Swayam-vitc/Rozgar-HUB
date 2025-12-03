@@ -23,7 +23,28 @@ connectDB();
 
 // Middleware
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        // Allow localhost and local network IPs
+        const allowedOrigins = [
+            'http://localhost:8080',
+            'http://127.0.0.1:8080',
+            process.env.CORS_ORIGIN
+        ];
+
+        // Allow any IP in the 192.168.x.x range on port 8080
+        if (origin.match(/^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:8080$/)) {
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true
 }));
 app.use(express.json());

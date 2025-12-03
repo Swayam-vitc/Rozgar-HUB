@@ -28,10 +28,12 @@ import { mockPayments, mockCalendarEvents } from "@/lib/mockData";
 import { useNavigate } from "react-router-dom";
 import { workerAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function WorkerDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [workerProfile, setWorkerProfile] = useState<WorkerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [ongoingJobs, setOngoingJobs] = useState<any[]>([]);
@@ -85,7 +87,7 @@ export default function WorkerDashboard() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
+          <p className="text-muted-foreground">{t("dashboard.loadingDashboard")}</p>
         </div>
       </div>
     );
@@ -104,27 +106,27 @@ export default function WorkerDashboard() {
         <div className="container mx-auto p-4 md:p-8">
           {/* Welcome Section */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-2">Welcome back, {workerProfile.name}! 👋</h2>
-            <p className="text-muted-foreground">Here's your work overview</p>
+            <h2 className="text-3xl font-bold mb-2">{t("dashboard.welcomeBack")}, {workerProfile.name}! 👋</h2>
+            <p className="text-muted-foreground">{t("dashboard.workOverview")}</p>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <StatCard
-              title="Total Earnings"
+              title={t("dashboard.totalEarnings")}
               value={`₹${workerProfile.totalEarnings?.toLocaleString() || '0'}`}
               icon={IndianRupee}
               gradient="gradient-success"
               trend="+12% from last month"
             />
             <StatCard
-              title="Ongoing Jobs"
+              title={t("dashboard.ongoingJobs")}
               value={ongoingJobs.length.toString()}
               icon={Briefcase}
               gradient="gradient-saffron"
             />
             <StatCard
-              title="Completed Jobs"
+              title={t("dashboard.completedJobs")}
               value={workerProfile.completedJobs || 0}
               icon={CalendarIcon}
             />
@@ -138,7 +140,7 @@ export default function WorkerDashboard() {
               onClick={() => navigate("/worker/jobs")}
             >
               <Search className="h-6 w-6" />
-              <span>Find Jobs</span>
+              <span>{t("dashboard.findJobs")}</span>
             </Button>
             <Button
               variant="outline"
@@ -146,7 +148,7 @@ export default function WorkerDashboard() {
               onClick={() => navigate("/worker/team")}
             >
               <Users className="h-6 w-6" />
-              <span>My Team</span>
+              <span>{t("dashboard.myTeam")}</span>
             </Button>
             <Button
               variant="outline"
@@ -154,7 +156,7 @@ export default function WorkerDashboard() {
               onClick={() => navigate("/worker/wallet")}
             >
               <Wallet className="h-6 w-6" />
-              <span>Wallet</span>
+              <span>{t("dashboard.wallet")}</span>
             </Button>
             <Button
               variant="outline"
@@ -162,7 +164,7 @@ export default function WorkerDashboard() {
               onClick={() => navigate("/worker/messages")}
             >
               <MessageSquare className="h-6 w-6" />
-              <span>Messages</span>
+              <span>{t("dashboard.messages")}</span>
             </Button>
           </div>
 
@@ -171,7 +173,7 @@ export default function WorkerDashboard() {
             <div className="mb-8">
               <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
                 <CheckCircle className="h-6 w-6 text-green-500" />
-                Ongoing Jobs
+                {t("dashboard.ongoingJobs")}
               </h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {ongoingJobs.map((job) => (
@@ -192,7 +194,7 @@ export default function WorkerDashboard() {
                           </div>
                         </div>
                       </div>
-                      <CardTitle className="text-base">{job.jobTitle || "Work Assignment"}</CardTitle>
+                      <CardTitle className="text-base">{job.jobTitle || t("dashboard.workAssignment")}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       {job.jobDescription && (
@@ -220,7 +222,7 @@ export default function WorkerDashboard() {
                         </div>
                       )}
                       <div className="text-xs text-muted-foreground">
-                        Accepted on {formatDate(job.updatedAt || job.createdAt)}
+                        {t("dashboard.acceptedOn")} {formatDate(job.updatedAt || job.createdAt)}
                       </div>
                     </CardContent>
                   </Card>
@@ -234,7 +236,7 @@ export default function WorkerDashboard() {
             <div className="mb-8">
               <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
                 <XCircle className="h-6 w-6 text-red-500" />
-                Rejected Jobs
+                {t("dashboard.rejectedJobs")}
               </h3>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {rejectedJobs.map((job) => (
@@ -250,9 +252,9 @@ export default function WorkerDashboard() {
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-sm truncate">{job.employerName}</h4>
                         </div>
-                        <Badge variant="destructive" className="text-xs">Rejected</Badge>
+                        <Badge variant="destructive" className="text-xs">{t("dashboard.rejected")}</Badge>
                       </div>
-                      <CardTitle className="text-base">{job.jobTitle || "Work Assignment"}</CardTitle>
+                      <CardTitle className="text-base">{job.jobTitle || t("dashboard.workAssignment")}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2">
                       {job.salaryAmount > 0 && (
@@ -267,7 +269,7 @@ export default function WorkerDashboard() {
                         </div>
                       )}
                       <div className="text-xs text-muted-foreground">
-                        Rejected on {formatDate(job.updatedAt || job.createdAt)}
+                        {t("dashboard.rejectedOn")} {formatDate(job.updatedAt || job.createdAt)}
                       </div>
                     </CardContent>
                   </Card>
@@ -282,7 +284,7 @@ export default function WorkerDashboard() {
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Your Schedule</CardTitle>
+                  <CardTitle>{t("dashboard.yourSchedule")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <WorkerCalendar events={mockCalendarEvents} />
@@ -295,7 +297,7 @@ export default function WorkerDashboard() {
               {/* Pending Payments */}
               <Card className="shadow-card">
                 <CardHeader>
-                  <CardTitle className="text-lg">Pending Payments</CardTitle>
+                  <CardTitle className="text-lg">{t("dashboard.pendingPayments")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -311,7 +313,7 @@ export default function WorkerDashboard() {
                       ))}
                     </div>
                     <Button className="w-full" variant="outline">
-                      View All
+                      {t("dashboard.viewAll")}
                     </Button>
                   </div>
                 </CardContent>
@@ -320,7 +322,7 @@ export default function WorkerDashboard() {
               {/* Today's Tasks */}
               <Card className="shadow-card">
                 <CardHeader>
-                  <CardTitle className="text-lg">Today's Tasks</CardTitle>
+                  <CardTitle className="text-lg">{t("dashboard.todaysTasks")}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">

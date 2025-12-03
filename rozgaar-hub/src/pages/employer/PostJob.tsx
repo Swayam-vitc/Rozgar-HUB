@@ -203,6 +203,11 @@ export default function PostJob() {
       return;
     }
 
+    if (!selectedState || !selectedCity) {
+      toast.error("Please select both state and city");
+      return;
+    }
+
     if (selectedSkills.length === 0) {
       toast.error("Please select at least one skill");
       return;
@@ -212,6 +217,10 @@ export default function PostJob() {
       setLoading(true);
       const jobData = {
         ...formData,
+        location: {
+          state: selectedState,
+          city: selectedCity
+        },
         skills: selectedSkills,
         payAmount: Number(formData.payAmount),
         teamSize: formData.teamRequired ? Number(formData.teamSize) : 1

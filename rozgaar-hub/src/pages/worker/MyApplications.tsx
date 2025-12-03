@@ -81,7 +81,9 @@ export default function MyApplications() {
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <MapPin className="h-4 w-4" />
-                                                        {app.jobId?.location || "Location"}
+                                                        {typeof app.jobId?.location === 'object'
+                                                            ? `${app.jobId.location.city}, ${app.jobId.location.state}`
+                                                            : app.jobId?.location || "Location"}
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <Calendar className="h-4 w-4" />

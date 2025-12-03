@@ -16,10 +16,12 @@ import {
 } from "lucide-react";
 import { employerAPI } from "@/lib/api";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 export default function EmployerDashboard() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState({
     totalJobs: 0,
@@ -65,31 +67,31 @@ export default function EmployerDashboard() {
         <div className="container mx-auto p-4 md:p-8">
           {/* Welcome Section */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-2">Welcome, {user?.name}! 👔</h2>
-            <p className="text-muted-foreground">Manage your projects and find the best workers</p>
+            <h2 className="text-3xl font-bold mb-2">{t('welcomeUser', { name: user?.name })}! 👔</h2>
+            <p className="text-muted-foreground">{t('employerSubtitle')}</p>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <StatCard
-              title="Active Projects"
+              title={t('ongoingJobs')}
               value={analytics.activeJobs}
               icon={Briefcase}
               gradient="gradient-saffron"
             />
             <StatCard
-              title="Total Applications"
+              title={t('totalApplications')}
               value={analytics.totalApplications}
               icon={Users}
               gradient="gradient-hero"
             />
             <StatCard
-              title="Total Spent"
+              title={t('totalSpent')}
               value={`₹${analytics.totalSpent.toLocaleString()}`}
               icon={IndianRupee}
             />
             <StatCard
-              title="Completed Jobs"
+              title={t('completedJobs')}
               value={analytics.completedJobs}
               icon={TrendingUp}
               gradient="gradient-success"
@@ -104,7 +106,7 @@ export default function EmployerDashboard() {
               onClick={() => navigate("/employer/post-job")}
             >
               <Plus className="h-6 w-6" />
-              <span>Post Job</span>
+              <span>{t('navPostJob')}</span>
             </Button>
             <Button
               variant="outline"
@@ -112,7 +114,7 @@ export default function EmployerDashboard() {
               onClick={() => navigate("/employer/workers")}
             >
               <Users className="h-6 w-6" />
-              <span>Find Workers</span>
+              <span>{t('findWorkers')}</span>
             </Button>
             <Button
               variant="outline"
@@ -120,7 +122,7 @@ export default function EmployerDashboard() {
               onClick={() => navigate("/employer/projects")}
             >
               <Calendar className="h-6 w-6" />
-              <span>My Projects</span>
+              <span>{t('navMyProjects')}</span>
             </Button>
             <Button
               variant="outline"
@@ -128,21 +130,21 @@ export default function EmployerDashboard() {
               onClick={() => navigate("/employer/messages")}
             >
               <MessageSquare className="h-6 w-6" />
-              <span>Messages</span>
+              <span>{t('navMessages')}</span>
             </Button>
           </div>
 
           {/* Active Projects */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Projects</CardTitle>
+              <CardTitle>{t('recentProjects')}</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-4">Loading projects...</div>
+                <div className="text-center py-4">{t('common.loading')}</div>
               ) : activeProjects.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No active projects found. Post a job to get started!
+                  {t('noActiveProjects')}
                 </div>
               ) : (
                 <div className="space-y-4">

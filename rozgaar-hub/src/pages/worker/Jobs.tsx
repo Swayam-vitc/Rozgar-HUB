@@ -15,8 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getAllStates, getCitiesForState, matchesLocationFilter } from "@/lib/locationData";
+import { useTranslation } from "react-i18next";
 
 export default function Jobs() {
+  const { t } = useTranslation();
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,7 +38,7 @@ export default function Jobs() {
       }
     } catch (error) {
       console.error("Error fetching jobs:", error);
-      toast.error("Failed to load jobs");
+      toast.error(t('common.loadingError') || "Failed to load jobs");
     } finally {
       setLoading(false);
     }
@@ -65,10 +67,10 @@ export default function Jobs() {
     try {
       await workerAPI.applyToJob(jobId, {});
       setAppliedJobs(prev => new Set(prev).add(jobId));
-      toast.success("Application submitted successfully!");
+      toast.success(t('applySuccess'));
     } catch (error: any) {
       console.error("Error applying to job:", error);
-      toast.error(error.message || "Failed to submit application");
+      toast.error(error.message || t('applyError'));
     }
   };
 
@@ -94,16 +96,33 @@ export default function Jobs() {
     // Filter by pay type
     const matchesPayType = payType === "all" || job.payType === payType;
 
+    // Helper to handle location (string or object)
+    const getLocationString = (loc: any) => {
+      if (typeof loc === 'object' && loc !== null) {
+        return `${loc.city}, ${loc.state}`;
+      }
+      return loc || "";
+    };
+
+    const locationStr = getLocationString(job.location);
+
     // Filter by location (state and/or city)
-    const matchesLocation = matchesLocationFilter(
-      job.location || "",
-      selectedState,
-      selectedCity
-    );
+    let matchesLocation = false;
+    if (typeof job.location === 'object' && job.location !== null) {
+      const stateMatch = !selectedState || job.location.state === selectedState;
+      const cityMatch = !selectedCity || job.location.city === selectedCity;
+      matchesLocation = stateMatch && cityMatch;
+    } else {
+      matchesLocation = matchesLocationFilter(
+        job.location || "",
+        selectedState,
+        selectedCity
+      );
+    }
 
     // Filter by search query (searches in location, title, description)
     const matchesSearch = !searchQuery ||
-      job.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      locationStr.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
@@ -120,9 +139,9 @@ export default function Jobs() {
       <main className="flex-1 md:ml-64 pb-20 md:pb-0">
         <div className="container mx-auto p-4 md:p-8">
           <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">Browse Jobs</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">{t('browseJobs')}</h1>
             <p className="text-muted-foreground">
-              Find your next opportunity
+              {t('findOpportunity')}
             </p>
           </div>
 
@@ -132,7 +151,7 @@ export default function Jobs() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
                 <Input
-                  placeholder="Search by location, title, or description..."
+                  placeholder={t('searchPlaceholder')}
                   className="pl-10"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -144,10 +163,10 @@ export default function Jobs() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Pay Types</SelectItem>
-                  <SelectItem value="hourly">Hourly</SelectItem>
-                  <SelectItem value="daily">Daily</SelectItem>
-                  <SelectItem value="fixed">Fixed</SelectItem>
+                  <SelectItem value="all">{t('allPayTypes')}</SelectItem>
+                  <SelectItem value="hourly">{t('hourly')}</SelectItem>
+                  <SelectItem value="daily">{t('daily')}</SelectItem>
+                  <SelectItem value="fixed">{t('fixed')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -158,10 +177,10 @@ export default function Jobs() {
                 <Select value={selectedState || "all-states"} onValueChange={(value) => handleStateChange(value === "all-states" ? "" : value)}>
                   <SelectTrigger>
                     <MapPin className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Select State" />
+                    <SelectValue placeholder={t('selectState')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all-states">All States</SelectItem>
+                    <SelectItem value="all-states">{t('allStates')}</SelectItem>
                     {getAllStates().map((state) => (
                       <SelectItem key={state} value={state}>
                         {state}
@@ -177,10 +196,10 @@ export default function Jobs() {
                   disabled={!selectedState}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={selectedState ? "Select City" : "Select State First"} />
+                    <SelectValue placeholder={selectedState ? t('selectCity') : t('selectStateFirst')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all-cities">All Cities</SelectItem>
+                    <SelectItem value="all-cities">{t('allCities')}</SelectItem>
                     {availableCities.map((city) => (
                       <SelectItem key={city} value={city}>
                         {city}
@@ -195,18 +214,18 @@ export default function Jobs() {
                   onClick={clearLocationFilters}
                   className="sm:w-auto"
                 >
-                  Clear Location
+                  {t('clearLocation')}
                 </Button>
               )}
             </div>
 
             <div className="flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                {filteredJobs.length} jobs found
+                {t('jobsFound', { count: filteredJobs.length })}
               </p>
               {(selectedState || selectedCity) && (
                 <p className="text-sm text-muted-foreground">
-                  Filtering by: {selectedCity && selectedState ? `${selectedCity}, ${selectedState}` : selectedState || selectedCity}
+                  {t('filteringBy', { filter: selectedCity && selectedState ? `${selectedCity}, ${selectedState}` : selectedState || selectedCity })}
                 </p>
               )}
             </div>
@@ -215,13 +234,13 @@ export default function Jobs() {
           {/* Jobs Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {loading ? (
-              <div className="col-span-full text-center py-8">Loading jobs...</div>
+              <div className="col-span-full text-center py-8">{t('loadingJobs')}</div>
             ) : filteredJobs.length === 0 ? (
               <div className="col-span-full text-center py-12">
                 <p className="text-muted-foreground">
                   {(selectedState || selectedCity)
-                    ? "No jobs available in this location."
-                    : "No jobs found matching your criteria."}
+                    ? t('noJobsLocation')
+                    : t('noJobsCriteria')}
                 </p>
               </div>
             ) : (

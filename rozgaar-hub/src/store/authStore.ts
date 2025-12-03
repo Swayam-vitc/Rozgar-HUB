@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { User, UserRole, WorkerProfile, EmployerProfile } from "@/types";
 import { authAPI } from "@/lib/api";
+import i18n from "@/lib/i18n";
 
 interface AuthState {
   user: User | WorkerProfile | EmployerProfile | null;
@@ -40,6 +41,12 @@ export const useAuthStore = create<AuthState>()(
 
           if (response.success && response.token) {
             localStorage.setItem('rozgaar-token', response.token);
+
+            // Set user's preferred language
+            if (response.user?.language) {
+              i18n.changeLanguage(response.user.language);
+            }
+
             set({
               user: response.user,
               token: response.token,
@@ -63,6 +70,12 @@ export const useAuthStore = create<AuthState>()(
 
           if (response.success && response.token) {
             localStorage.setItem('rozgaar-token', response.token);
+
+            // Set user's preferred language
+            if (response.user?.language) {
+              i18n.changeLanguage(response.user.language);
+            }
+
             set({
               user: response.user,
               token: response.token,
@@ -93,6 +106,11 @@ export const useAuthStore = create<AuthState>()(
           const response = await authAPI.getMe();
 
           if (response.success) {
+            // Set user's preferred language
+            if (response.user?.language) {
+              i18n.changeLanguage(response.user.language);
+            }
+
             set({
               user: response.user,
               token,

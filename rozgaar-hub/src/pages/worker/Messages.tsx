@@ -12,6 +12,7 @@ import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuthStore } from "@/store/authStore";
+import { useTranslation } from "react-i18next";
 
 interface Message {
   _id: string;
@@ -45,6 +46,7 @@ interface Conversation {
 }
 
 export default function Messages() {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const { socket, isConnected } = useSocket();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -106,7 +108,7 @@ export default function Messages() {
       }
     } catch (error) {
       console.error("Error fetching conversations:", error);
-      toast.error("Failed to load conversations");
+      toast.error(t('common.loadingError') || "Failed to load conversations");
     } finally {
       setLoading(false);
     }
@@ -124,7 +126,7 @@ export default function Messages() {
       }
     } catch (error) {
       console.error("Error fetching messages:", error);
-      toast.error("Failed to load messages");
+      toast.error(t('common.loadingError') || "Failed to load messages");
     }
   };
 
@@ -138,8 +140,8 @@ export default function Messages() {
     }
   };
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async (e?: React.FormEvent | React.MouseEvent | React.KeyboardEvent) => {
+    if (e) e.preventDefault();
     if (!messageText.trim() || !selectedConversation || !socket) return;
 
     const text = messageText.trim();
@@ -154,7 +156,7 @@ export default function Messages() {
       });
     } catch (error) {
       console.error("Error sending message:", error);
-      toast.error("Failed to send message");
+      toast.error(t('common.error') || "Failed to send message");
     } finally {
       setSending(false);
     }
@@ -165,7 +167,7 @@ export default function Messages() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading messages...</p>
+          <p className="text-muted-foreground">{t('loadingMessages')}</p>
         </div>
       </div>
     );
@@ -179,9 +181,9 @@ export default function Messages() {
         <div className="h-screen flex flex-col">
           {/* Header */}
           <div className="p-4 md:p-6 border-b">
-            <h1 className="text-2xl md:text-3xl font-bold">Messages</h1>
+            <h1 className="text-2xl md:text-3xl font-bold">{t('messagesTitle')}</h1>
             <p className="text-muted-foreground text-sm">
-              {isConnected ? "🟢 Connected" : "🔴 Disconnected"}
+              {isConnected ? `🟢 ${t('connected')}` : `🔴 ${t('disconnected')}`}
             </p>
           </div>
 
@@ -191,9 +193,9 @@ export default function Messages() {
               {conversations.length === 0 ? (
                 <div className="p-8 text-center">
                   <MessageCircle className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">No conversations yet</p>
+                  <p className="text-muted-foreground">{t('noConversations')}</p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Start chatting when you connect with employers
+                    {t('startChatting')}
                   </p>
                 </div>
               ) : (
@@ -269,7 +271,7 @@ export default function Messages() {
                   <ScrollArea className="flex-1 p-4">
                     <div className="space-y-4">
                       {messages.map((message) => {
-                        const isOwnMessage = message.senderId._id === user?._id;
+                        const isOwnMessage = message.senderId._id === (user as any)?._id;
                         return (
                           <div
                             key={message._id}
@@ -297,11 +299,11 @@ export default function Messages() {
                   {selectedConversation?.completed ? (
                     <div className="p-4 border-t bg-muted/50">
                       <p className="text-sm text-muted-foreground text-center mb-2">
-                        This job has been completed. Chat is now disabled.
+                        {t('jobCompletedChatDisabled')}
                       </p>
                       {selectedConversation.rating && (
                         <div className="bg-card p-3 rounded-lg border">
-                          <p className="text-xs font-medium mb-2">Your Rating:</p>
+                          <p className="text-xs font-medium mb-2">{t('yourRating')}</p>
                           <div className="flex items-center gap-2">
                             <div className="flex">
                               {[...Array(5)].map((_, i) => (
@@ -322,17 +324,24 @@ export default function Messages() {
                       )}
                     </div>
                   ) : (
-                    <form onSubmit={handleSendMessage} className="p-4 border-t">
+                    <div className="p-4 border-t">
                       <div className="flex gap-2">
                         <Input
                           value={messageText}
                           onChange={(e) => setMessageText(e.target.value)}
-                          placeholder="Type a message..."
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                          placeholder={t('typeMessage')}
                           disabled={!isConnected || sending}
                           className="flex-1"
                         />
                         <Button
-                          type="submit"
+                          type="button"
+                          onClick={handleSendMessage}
                           disabled={!isConnected || sending || !messageText.trim()}
                           size="icon"
                         >
@@ -343,16 +352,16 @@ export default function Messages() {
                           )}
                         </Button>
                       </div>
-                    </form>
+                    </div>
                   )}
                 </>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
                   <div className="text-center">
                     <MessageCircle className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
-                    <p className="text-xl font-semibold mb-2">Select a conversation</p>
+                    <p className="text-xl font-semibold mb-2">{t('selectConversation')}</p>
                     <p className="text-muted-foreground">
-                      Choose a conversation from the left to start messaging
+                      {t('chooseConversation')}
                     </p>
                   </div>
                 </div>

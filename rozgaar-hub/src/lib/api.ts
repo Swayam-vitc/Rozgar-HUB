@@ -1,8 +1,23 @@
 import axios from 'axios';
 
 // Create axios instance with base URL
+// Create axios instance with base URL
+// Dynamically determine the backend URL based on current hostname
+const hostname = window.location.hostname;
+const protocol = window.location.protocol;
+const backendPort = '4000'; // Assuming backend runs on 4000
+
+let BASE_URL = import.meta.env.VITE_API_URL;
+
+if (!BASE_URL) {
+    // If no env var, construct URL from current hostname
+    BASE_URL = `${protocol}//${hostname}:${backendPort}/api`;
+}
+
+console.log('🌐 API Base URL:', BASE_URL);
+
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
+    baseURL: BASE_URL,
     headers: {
         'Content-Type': 'application/json'
     }

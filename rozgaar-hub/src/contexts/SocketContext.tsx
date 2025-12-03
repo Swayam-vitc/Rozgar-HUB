@@ -37,7 +37,19 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         }
 
         // Initialize Socket.io connection
-        const SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:4000';
+        // Dynamically determine the backend URL based on current hostname
+        const hostname = window.location.hostname;
+        const protocol = window.location.protocol;
+        const backendPort = '4000'; // Assuming backend runs on 4000
+
+        let SOCKET_URL = import.meta.env.VITE_API_URL?.replace('/api', '');
+
+        if (!SOCKET_URL) {
+            // If no env var, construct URL from current hostname
+            SOCKET_URL = `${protocol}//${hostname}:${backendPort}`;
+        }
+
+        console.log('🔌 Connecting to Socket.io at:', SOCKET_URL);
 
         const newSocket = io(SOCKET_URL, {
             auth: {

@@ -15,23 +15,26 @@ import {
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
-
-const navigation = [
-  { name: "Dashboard", href: "/worker/dashboard", icon: LayoutDashboard },
-  { name: "Calendar", href: "/worker/calendar", icon: Calendar },
-  { name: "Jobs", href: "/worker/jobs", icon: Briefcase },
-  { name: "Work Requests", href: "/worker/work-requests", icon: FileText },
-  { name: "My Applications", href: "/worker/applications", icon: Briefcase },
-  { name: "Team", href: "/worker/team", icon: Users },
-  { name: "Messages", href: "/worker/messages", icon: MessageSquare },
-  { name: "Wallet", href: "/worker/wallet", icon: Wallet },
-  { name: "Profile", href: "/worker/profile", icon: User },
-  { name: "Help", href: "/worker/help", icon: HelpCircle },
-];
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useTranslation } from "react-i18next";
 
 export function WorkerSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const { logout } = useAuthStore();
+  const { t } = useTranslation();
+
+  const navigation = [
+    { name: t("nav.dashboard"), href: "/worker/dashboard", icon: LayoutDashboard },
+    { name: t("nav.calendar"), href: "/worker/calendar", icon: Calendar },
+    { name: t("nav.jobs"), href: "/worker/jobs", icon: Briefcase },
+    { name: t("nav.workRequests"), href: "/worker/work-requests", icon: FileText },
+    { name: t("nav.myApplications"), href: "/worker/applications", icon: Briefcase },
+    { name: t("nav.team"), href: "/worker/team", icon: Users },
+    { name: t("nav.messages"), href: "/worker/messages", icon: MessageSquare },
+    { name: t("nav.wallet"), href: "/worker/wallet", icon: Wallet },
+    { name: t("nav.profile"), href: "/worker/profile", icon: User },
+    { name: t("nav.help"), href: "/worker/help", icon: HelpCircle },
+  ];
 
   return (
     <>
@@ -80,6 +83,10 @@ export function WorkerSidebar() {
 
           {/* Logout */}
           <div className="border-t p-4">
+            <div className="flex items-center justify-between mb-4 px-2">
+              <span className="text-sm font-medium">Language</span>
+              <LanguageSwitcher />
+            </div>
             <Button
               variant="outline"
               className="w-full"
@@ -88,7 +95,7 @@ export function WorkerSidebar() {
                 window.location.href = "/";
               }}
             >
-              Logout
+              {t("nav.logout")}
             </Button>
           </div>
         </div>

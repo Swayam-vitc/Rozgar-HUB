@@ -15,7 +15,10 @@ import { toast } from "sonner";
 import { workerAPI, authAPI } from "@/lib/api";
 import { useAuthStore } from "@/store/authStore";
 
+import { useTranslation } from "react-i18next";
+
 export default function Profile() {
+  const { t } = useTranslation();
   const { user, setUser } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -56,7 +59,7 @@ export default function Profile() {
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
-        toast.error("Failed to load profile data");
+        toast.error(t('failedLoadProfile') || "Failed to load profile data");
       } finally {
         setLoading(false);
       }
@@ -82,7 +85,7 @@ export default function Profile() {
       const response = await authAPI.updateProfile(updateData) as any;
 
       if (response.success) {
-        toast.success("Profile updated successfully!");
+        toast.success(t('profileUpdated'));
 
         // Update user in auth store
         if (response.user) {
@@ -97,7 +100,7 @@ export default function Profile() {
       }
     } catch (error: any) {
       console.error("Error updating profile:", error);
-      toast.error(error.message || "Failed to update profile");
+      toast.error(error.message || t('profileUpdateError'));
     } finally {
       setSaving(false);
     }
@@ -108,7 +111,7 @@ export default function Profile() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground">Loading profile...</p>
+          <p className="text-muted-foreground">{t('loadingProfile')}</p>
         </div>
       </div>
     );
@@ -121,9 +124,9 @@ export default function Profile() {
       <main className="flex-1 md:ml-64 pb-20 md:pb-0">
         <div className="container mx-auto p-4 md:p-8 max-w-4xl">
           <div className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">My Profile</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">{t('myProfile')}</h1>
             <p className="text-muted-foreground">
-              Manage your profile and settings
+              {t('manageProfile')}
             </p>
           </div>
 
@@ -150,7 +153,7 @@ export default function Profile() {
                     <div className="flex items-center gap-1">
                       <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" />
                       <span className="font-semibold">{profileData?.rating || 0}</span>
-                      <span className="text-muted-foreground text-sm">({profileData?.reviewsCount || 0} reviews)</span>
+                      <span className="text-muted-foreground text-sm">({profileData?.reviewsCount || 0} {t('reviews')})</span>
                     </div>
                     <StreakBadge streak={profileData?.streak || 0} />
                     <LevelBadge level={profileData?.level || "bronze"} />
@@ -171,7 +174,7 @@ export default function Profile() {
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-primary">{profileData?.completedJobs || 0}</p>
-                  <p className="text-sm text-muted-foreground">Completed Jobs</p>
+                  <p className="text-sm text-muted-foreground">{t('completedJobs')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -179,7 +182,7 @@ export default function Profile() {
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-primary">₹{profileData?.totalEarnings?.toLocaleString() || 0}</p>
-                  <p className="text-sm text-muted-foreground">Total Earnings</p>
+                  <p className="text-sm text-muted-foreground">{t('totalEarnings')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -187,7 +190,7 @@ export default function Profile() {
               <CardContent className="p-4">
                 <div className="text-center">
                   <p className="text-2xl font-bold text-primary">{profileData?.verified ? "✓" : "✗"}</p>
-                  <p className="text-sm text-muted-foreground">Verification Status</p>
+                  <p className="text-sm text-muted-foreground">{t('verificationStatus')}</p>
                 </div>
               </CardContent>
             </Card>
@@ -196,12 +199,12 @@ export default function Profile() {
           {/* Profile Form */}
           <Card className="shadow-card">
             <CardHeader>
-              <CardTitle>Edit Profile</CardTitle>
+              <CardTitle>{t('editProfile')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="name">{t('fullName')}</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -210,7 +213,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">{t('phoneNumber')}</Label>
                   <Input
                     id="phone"
                     value={formData.phone}
@@ -220,7 +223,7 @@ export default function Profile() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('email')}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -228,11 +231,11 @@ export default function Profile() {
                   disabled
                   className="bg-muted"
                 />
-                <p className="text-xs text-muted-foreground">Email cannot be changed</p>
+                <p className="text-xs text-muted-foreground">{t('emailCannotChange')}</p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
+                <Label htmlFor="location">{t('location')}</Label>
                 <Input
                   id="location"
                   value={formData.location}
@@ -243,7 +246,7 @@ export default function Profile() {
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="hourlyRate">Hourly Rate (₹)</Label>
+                  <Label htmlFor="hourlyRate">{t('hourlyRate')}</Label>
                   <Input
                     id="hourlyRate"
                     type="number"
@@ -254,7 +257,7 @@ export default function Profile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="dailyRate">Daily Rate (₹)</Label>
+                  <Label htmlFor="dailyRate">{t('dailyRate')}</Label>
                   <Input
                     id="dailyRate"
                     type="number"
@@ -266,13 +269,13 @@ export default function Profile() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
+                <Label htmlFor="bio">{t('bio')}</Label>
                 <Textarea
                   id="bio"
                   value={formData.bio}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   rows={4}
-                  placeholder="Tell employers about your experience and skills..."
+                  placeholder={t('bioPlaceholder')}
                 />
               </div>
 
@@ -284,10 +287,10 @@ export default function Profile() {
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    {t('saving')}
                   </>
                 ) : (
-                  "Save Changes"
+                  t('saveChanges')
                 )}
               </Button>
             </CardContent>

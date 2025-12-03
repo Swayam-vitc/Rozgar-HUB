@@ -34,6 +34,21 @@ const createTranslation = (lang: any) => ({
     aiChat: lang.aiChat,
     searchFaq: lang.searchFaq,
   },
+  onboarding: {
+    title: lang.onboardingTitle,
+    subtitle: lang.onboardingSubtitle,
+    skills: lang.skills,
+    addSkill: lang.addSkill,
+    add: lang.add,
+    hourlyRate: lang.hourlyRate,
+    dailyRate: lang.dailyRate,
+    about: lang.about,
+    aboutPlaceholder: lang.aboutPlaceholder,
+    completeProfile: lang.completeProfile,
+    saving: lang.saving,
+    selectSkillError: lang.selectSkillError,
+    successMessage: lang.successMessage,
+  },
   common: lang.common,
 });
 
@@ -379,5 +394,22 @@ i18n.use(initReactI18next).init({
   fallbackLng: "en",
   interpolation: { escapeValue: false },
 });
+
+export const LANGUAGES = [
+  { code: "en", name: "English" },
+  { code: "hi", name: "हिंदी (Hindi)" },
+  { code: "bn", name: "বাংলা (Bengali)" },
+  { code: "te", name: "తెలుగు (Telugu)" },
+  { code: "mr", name: "मराठी (Marathi)" },
+  { code: "ta", name: "தமிழ் (Tamil)" },
+  { code: "gu", name: "ગુજરાતી (Gujarati)" },
+  { code: "kn", name: "ಕನ್ನಡ (Kannada)" },
+  { code: "ml", name: "മലയാളം (Malayalam)" },
+  { code: "pa", name: "ਪੰਜਾਬੀ (Punjabi)" },
+  { code: "or", name: "ଓଡ଼ିଆ (Odia)" },
+  { code: "as", name: "অসমীয়া (Assamese)" },
+  { code: "ur", name: "اردو (Urdu)" },
+  { code: "ne", name: "नेपाली (Nepali)" },
+];
 
 export default i18n;

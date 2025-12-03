@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useTranslation } from "react-i18next";
+import i18n, { LANGUAGES } from "@/lib/i18n";
 import { toast } from "sonner";
 import { Briefcase } from "lucide-react";
 
@@ -136,14 +137,20 @@ export default function Signup() {
               <Label htmlFor="language">{t("auth.language")}</Label>
               <Select
                 value={formData.language}
-                onValueChange={(value) => setFormData({ ...formData, language: value })}
+                onValueChange={(value) => {
+                  setFormData({ ...formData, language: value });
+                  i18n.changeLanguage(value);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="en">{t("common.english")}</SelectItem>
-                  <SelectItem value="hi">{t("common.hindi")}</SelectItem>
+                  {LANGUAGES.map((lang) => (
+                    <SelectItem key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -51,6 +51,10 @@ const App = () => (
               <Route path="/auth/login" element={<Login />} />
               <Route path="/auth/role" element={<RoleSelection />} />
 
+              {/* Direct access routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+
               {/* Protected Onboarding Routes */}
               <Route path="/onboarding/worker" element={
                 <ProtectedRoute requiredRole="worker">

@@ -67,31 +67,31 @@ export default function EmployerDashboard() {
         <div className="container mx-auto p-4 md:p-8">
           {/* Welcome Section */}
           <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-2">{t('welcomeUser', { name: user?.name })}! 👔</h2>
-            <p className="text-muted-foreground">{t('employerSubtitle')}</p>
+            <h2 className="text-3xl font-bold mb-2">{t('dashboard.welcomeUser', { name: user?.name })}! 👔</h2>
+            <p className="text-muted-foreground">{t('dashboard.employerSubtitle')}</p>
           </div>
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <StatCard
-              title={t('ongoingJobs')}
+              title={t('dashboard.ongoingJobs')}
               value={analytics.activeJobs}
               icon={Briefcase}
               gradient="gradient-saffron"
             />
             <StatCard
-              title={t('totalApplications')}
+              title={t('dashboard.totalApplications')}
               value={analytics.totalApplications}
               icon={Users}
               gradient="gradient-hero"
             />
             <StatCard
-              title={t('totalSpent')}
+              title={t('dashboard.totalSpent')}
               value={`₹${analytics.totalSpent.toLocaleString()}`}
               icon={IndianRupee}
             />
             <StatCard
-              title={t('completedJobs')}
+              title={t('dashboard.completedJobs')}
               value={analytics.completedJobs}
               icon={TrendingUp}
               gradient="gradient-success"
@@ -106,7 +106,7 @@ export default function EmployerDashboard() {
               onClick={() => navigate("/employer/post-job")}
             >
               <Plus className="h-6 w-6" />
-              <span>{t('navPostJob')}</span>
+              <span>{t('dashboard.postJob')}</span>
             </Button>
             <Button
               variant="outline"
@@ -114,7 +114,7 @@ export default function EmployerDashboard() {
               onClick={() => navigate("/employer/workers")}
             >
               <Users className="h-6 w-6" />
-              <span>{t('findWorkers')}</span>
+              <span>{t('dashboard.findWorkers')}</span>
             </Button>
             <Button
               variant="outline"
@@ -122,7 +122,7 @@ export default function EmployerDashboard() {
               onClick={() => navigate("/employer/projects")}
             >
               <Calendar className="h-6 w-6" />
-              <span>{t('navMyProjects')}</span>
+              <span>{t('dashboard.myProjects')}</span>
             </Button>
             <Button
               variant="outline"
@@ -130,21 +130,21 @@ export default function EmployerDashboard() {
               onClick={() => navigate("/employer/messages")}
             >
               <MessageSquare className="h-6 w-6" />
-              <span>{t('navMessages')}</span>
+              <span>{t('dashboard.messages')}</span>
             </Button>
           </div>
 
           {/* Active Projects */}
           <Card>
             <CardHeader>
-              <CardTitle>{t('recentProjects')}</CardTitle>
+              <CardTitle>{t('dashboard.recentProjects')}</CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
                 <div className="text-center py-4">{t('common.loading')}</div>
               ) : activeProjects.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  {t('noActiveProjects')}
+                  {t('dashboard.noActiveProjects')}
                 </div>
               ) : (
                 <div className="space-y-4">

@@ -16,9 +16,12 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useTranslation } from "react-i18next";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { cn } from "@/lib/utils";
 
 export function EmployerSidebar() {
   const [isOpen, setIsOpen] = useState(false);
+  const unreadCount = useUnreadMessages();
   const { logout } = useAuthStore();
   const { t } = useTranslation();
 
@@ -29,7 +32,7 @@ export function EmployerSidebar() {
     { name: t('nav.workers'), href: "/employer/workers", icon: Users },
     { name: t('nav.applications'), href: "/employer/applications", icon: FileText },
     { name: t('nav.payments'), href: "/employer/payments", icon: CreditCard },
-    { name: t('nav.messages'), href: "/employer/messages", icon: MessageSquare },
+    { name: t('nav.messages'), href: "/employer/messages", icon: MessageSquare, badge: unreadCount },
   ];
 
   return (
@@ -72,7 +75,12 @@ export function EmployerSidebar() {
                 onClick={() => setIsOpen(false)}
               >
                 <item.icon className="h-5 w-5" />
-                {item.name}
+                <span className="flex-1">{item.name}</span>
+                {item.badge !== undefined && item.badge > 0 && (
+                  <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 font-medium">
+                    {item.badge > 99 ? '99+' : item.badge}
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -106,8 +114,4 @@ export function EmployerSidebar() {
       )}
     </>
   );
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
 }

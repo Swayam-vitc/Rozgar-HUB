@@ -28,7 +28,8 @@ export default function Profile() {
     name: "",
     phone: "",
     email: "",
-    location: "",
+    state: "",
+    city: "",
     hourlyRate: "",
     dailyRate: "",
     bio: "",
@@ -50,7 +51,8 @@ export default function Profile() {
             name: worker.name || "",
             phone: worker.phone || "",
             email: worker.email || "",
-            location: worker.location || "",
+            state: worker.location?.state || "",
+            city: worker.location?.city || "",
             hourlyRate: worker.hourlyRate?.toString() || "",
             dailyRate: worker.dailyRate?.toString() || "",
             bio: worker.bio || "",
@@ -75,7 +77,10 @@ export default function Profile() {
       const updateData = {
         name: formData.name,
         phone: formData.phone,
-        location: formData.location,
+        location: {
+          state: formData.state,
+          city: formData.city,
+        },
         hourlyRate: Number(formData.hourlyRate) || 0,
         dailyRate: Number(formData.dailyRate) || 0,
         bio: formData.bio,
@@ -234,14 +239,26 @@ export default function Profile() {
                 <p className="text-xs text-muted-foreground">{t('emailCannotChange')}</p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="location">{t('location')}</Label>
-                <Input
-                  id="location"
-                  value={formData.location}
-                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  placeholder="City, State"
-                />
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="state">{t('state') || 'State'}</Label>
+                  <Input
+                    id="state"
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    placeholder="Karnataka"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="city">{t('city') || 'City'}</Label>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    placeholder="Belagavi"
+                  />
+                </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">

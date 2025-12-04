@@ -15,6 +15,7 @@ import { useAuthStore } from "@/store/authStore";
 import { RatingModal } from "@/components/RatingModal";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
+import { useNotification } from "@/hooks/useNotification";
 
 interface Message {
   _id: string;
@@ -57,6 +58,7 @@ export default function Messages() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const { socket, isConnected } = useSocket();
+  const { playNotificationSound, showNotification } = useNotification();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -80,19 +82,43 @@ export default function Messages() {
     socket.on("receive-message", (data: any) => {
       console.log('📨 Message received:', data);
 
+      // Check if message is not from current user
+      const isOwnMessage = data.message.senderId._id === (user as any)?._id;
+
       if (selectedConversation && data.message.connectionId === selectedConversation.connectionId) {
         setMessages(prev => [...prev, data.message]);
         scrollToBottom();
 
         // Mark as read
         messageAPI.markAsRead(selectedConversation.connectionId).catch(err => console.error("Error marking read:", err));
+
+        // Play sound and show notification for incoming messages only
+        if (!isOwnMessage) {
+          playNotificationSound();
+          showNotification(
+            'New Message',
+            `You received a new message from ${data.message.senderId.name}`
+          );
+        }
+      } else if (!isOwnMessage) {
+        // Message from different conversation - always notify
+        playNotificationSound();
+        showNotification(
+          'New Message',
+          `You received a new message from ${data.message.senderId.name}`
+        );
       }
 
       // Update conversation list
       fetchConversations();
     });
 
-    socket.on("new-message-notification", () => {
+    socket.on("new-message-notification", (data) => {
+      console.log('🔔 Received new-message-notification:', data);
+      playNotificationSound();
+      if (data?.sender?.name) {
+        showNotification('New Message', `You received a new message from ${data.sender.name}`);
+      }
       fetchConversations();
     });
 
@@ -149,6 +175,15 @@ export default function Messages() {
     // Join Socket.io room
     if (socket) {
       socket.emit("join-conversation", conversation.connectionId);
+    }
+
+    // Mark as read and update badge
+    try {
+      await messageAPI.markAsRead(conversation.connectionId);
+      // Dispatch event to update unread count in sidebar
+      window.dispatchEvent(new Event('messages-read-update'));
+    } catch (error) {
+      console.error("Error marking as read:", error);
     }
   };
 

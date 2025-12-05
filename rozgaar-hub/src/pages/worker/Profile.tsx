@@ -34,7 +34,9 @@ export default function Profile() {
     dailyRate: "",
     bio: "",
     skills: [] as string[],
+    profilePhoto: "",
   });
+  const [uploading, setUploading] = useState(false);
 
   // Fetch profile data on mount
   useEffect(() => {
@@ -57,6 +59,7 @@ export default function Profile() {
             dailyRate: worker.dailyRate?.toString() || "",
             bio: worker.bio || "",
             skills: worker.skills || [],
+            profilePhoto: worker.profilePhoto || "",
           });
         }
       } catch (error) {
@@ -69,6 +72,39 @@ export default function Profile() {
 
     fetchProfile();
   }, []);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please upload an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setFormData(prev => ({ ...prev, profilePhoto: base64String }));
+        toast.success('Image uploaded successfully');
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -85,6 +121,7 @@ export default function Profile() {
         dailyRate: Number(formData.dailyRate) || 0,
         bio: formData.bio,
         skills: formData.skills,
+        profilePhoto: formData.profilePhoto,
       };
 
       const response = await authAPI.updateProfile(updateData) as any;
@@ -141,16 +178,31 @@ export default function Profile() {
               <div className="flex flex-col md:flex-row items-center gap-6">
                 <div className="relative">
                   <Avatar className="h-32 w-32">
-                    <AvatarImage src={profileData?.profilePhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.name}`} />
+                    <AvatarImage src={formData.profilePhoto || `https://api.dicebear.com/7.x/avataaars/svg?seed=${formData.name}`} />
                     <AvatarFallback>{formData.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="absolute bottom-0 right-0 rounded-full"
-                  >
-                    <Camera className="h-4 w-4" />
-                  </Button>
+                  <label htmlFor="profilePhotoInput">
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="absolute bottom-0 right-0 rounded-full cursor-pointer"
+                      type="button"
+                      disabled={uploading}
+                      asChild
+                    >
+                      <span>
+                        {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+                      </span>
+                    </Button>
+                  </label>
+                  <input
+                    id="profilePhotoInput"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                    disabled={uploading}
+                  />
                 </div>
                 <div className="flex-1 text-center md:text-left">
                   <h2 className="text-2xl font-bold mb-2">{formData.name}</h2>

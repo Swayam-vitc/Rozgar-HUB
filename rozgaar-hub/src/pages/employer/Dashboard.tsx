@@ -4,6 +4,7 @@ import { EmployerSidebar } from "@/components/EmployerSidebar";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { StatCard } from "@/components/StatCard";
 import {
   Briefcase,
@@ -13,6 +14,7 @@ import {
   MessageSquare,
   IndianRupee,
   TrendingUp,
+  User,
 } from "lucide-react";
 import { employerAPI, paymentAPI } from "@/lib/api";
 import { toast } from "sonner";
@@ -81,10 +83,18 @@ export default function EmployerDashboard() {
 
       <main className="flex-1 md:ml-64">
         <div className="container mx-auto p-4 md:p-8">
-          {/* Welcome Section */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold mb-2">{t('dashboard.welcomeUser', { name: user?.name })}! 👔</h2>
-            <p className="text-muted-foreground">{t('dashboard.employerSubtitle')}</p>
+          {/* Welcome Section with Profile Picture */}
+          <div className="mb-8 flex items-center gap-4">
+            <Avatar className="h-16 w-16 md:h-20 md:w-20 border-2 border-primary">
+              <AvatarImage src={user?.profilePhoto} />
+              <AvatarFallback className="gradient-saffron text-white text-2xl">
+                {user?.name?.[0] || <User className="h-8 w-8" />}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <h2 className="text-3xl font-bold mb-2">{t('dashboard.welcomeUser', { name: user?.name })}! 👔</h2>
+              <p className="text-muted-foreground">{t('dashboard.employerSubtitle')}</p>
+            </div>
           </div>
 
           {/* Stats Grid */}

@@ -178,11 +178,25 @@ export default function Applications() {
         });
     };
 
+    const handleStatusUpdate = async (applicationId: string, status: 'accepted' | 'rejected' | 'hired') => {
+        try {
+            const response = await employerAPI.updateApplication(applicationId, { status }) as any;
+            if (response.success) {
+                toast.success(`Application ${status} successfully!`);
+                fetchApplications(); // Refresh the list
+            }
+        } catch (error: any) {
+            console.error("Error updating application:", error);
+            toast.error(error.message || "Failed to update application");
+        }
+    };
+
     const getStatusBadge = (status: string) => {
         const variants: Record<string, string> = {
             pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
             accepted: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
             rejected: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+            hired: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
         };
         return variants[status] || "bg-gray-100 text-gray-800";
     };
@@ -323,15 +337,30 @@ export default function Applications() {
                                             </div>
                                         </CardContent>
 
-                                        <CardFooter className="pt-4">
-                                            <Button
-                                                className="w-full gradient-hero text-white"
-                                                onClick={() => handleHireClick(application)}
-                                                disabled={application.status !== "pending"}
-                                            >
-                                                <UserPlus className="h-4 w-4 mr-2" />
-                                                {application.status === "pending" ? "Hire Worker" : "Already Processed"}
-                                            </Button>
+                                        <CardFooter className="pt-4 flex gap-2">
+                                            {application.status === "pending" ? (
+                                                <>
+                                                    <Button
+                                                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                        onClick={() => handleStatusUpdate(application._id, 'hired')}
+                                                    >
+                                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                                        Hire
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        className="flex-1"
+                                                        onClick={() => handleHireClick(application)}
+                                                    >
+                                                        <UserPlus className="h-4 w-4 mr-2" />
+                                                        Send Request
+                                                    </Button>
+                                                </>
+                                            ) : (
+                                                <Button className="w-full" variant="secondary" disabled>
+                                                    {application.status === 'hired' ? 'Worker Hired' : application.status === 'accepted' ? 'Accepted' : 'Rejected'}
+                                                </Button>
+                                            )}
                                         </CardFooter>
                                     </Card>
                                 </motion.div>

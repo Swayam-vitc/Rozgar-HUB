@@ -117,7 +117,7 @@ export default function WorkRequests() {
                     <div className="mb-8">
                         <h1 className="text-3xl md:text-4xl font-bold mb-2">Work Requests</h1>
                         <p className="text-muted-foreground">
-                            Review and respond to hiring requests from employers
+                            Review and Respond to Hiring Requests From Employers
                         </p>
                     </div>
 
@@ -251,7 +251,7 @@ export default function WorkRequests() {
                             <div className="mb-6">
                                 <h2 className="text-2xl font-bold mb-2">Accepted Jobs</h2>
                                 <p className="text-muted-foreground">
-                                    Jobs you've accepted - click Chat to message the employer
+                                    Jobs You've Accepted - Click Chat to Message the Employer
                                 </p>
                             </div>
                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -59,20 +59,38 @@ export default function EditProject() {
 
             try {
                 setLoading(true);
+                console.log("Fetching job with ID:", id);
                 const response = await employerAPI.getJobById(id) as any;
+                console.log("Job fetch response:", response);
 
                 if (response.success && response.job) {
                     const job = response.job;
+                    console.log("Job data:", job);
 
-                    // Parse location to extract state and city
-                    const locationParts = job.location?.split(", ") || [];
-                    const city = locationParts[0] || "";
-                    const state = locationParts[1] || "";
+                    // Handle location - it's an object with city and state properties
+                    let locationString = "";
+                    let city = "";
+                    let state = "";
+
+                    if (job.location) {
+                        if (typeof job.location === 'string') {
+                            // If it's a string, parse it
+                            const locationParts = job.location.split(", ");
+                            city = locationParts[0] || "";
+                            state = locationParts[1] || "";
+                            locationString = job.location;
+                        } else if (typeof job.location === 'object') {
+                            // If it's an object, extract city and state
+                            city = job.location.city || "";
+                            state = job.location.state || "";
+                            locationString = city && state ? `${city}, ${state}` : (city || state || "");
+                        }
+                    }
 
                     setFormData({
                         title: job.title || "",
                         description: job.description || "",
-                        location: job.location || "",
+                        location: locationString,
                         payAmount: job.payAmount?.toString() || "",
                         payType: job.payType || "daily",
                         duration: job.duration || "",
@@ -86,12 +104,14 @@ export default function EditProject() {
                     setSelectedState(state);
                     setSelectedCity(city);
                 } else {
+                    console.error("Job not found in response:", response);
                     toast.error("Job not found");
                     navigate("/employer/projects");
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Error fetching job:", error);
-                toast.error("Failed to load job details");
+                console.error("Error details:", error.response?.data || error.message);
+                toast.error(error.response?.data?.message || "Failed to load job details");
                 navigate("/employer/projects");
             } finally {
                 setLoading(false);
@@ -125,21 +145,39 @@ export default function EditProject() {
             return;
         }
 
+        if (!formData.title || !formData.description || !formData.location) {
+            toast.error("Please fill in all required fields");
+            return;
+        }
+
+        if (!formData.payAmount || Number(formData.payAmount) <= 0) {
+            toast.error("Please enter a valid payment amount");
+            return;
+        }
+
         try {
             setSaving(true);
             const jobData = {
                 ...formData,
+                location: {
+                    city: selectedCity,
+                    state: selectedState
+                },
                 skills: selectedSkills,
                 payAmount: Number(formData.payAmount),
                 teamSize: formData.teamRequired ? Number(formData.teamSize) : 1
             };
 
-            await employerAPI.updateJob(id!, jobData);
+            console.log("Updating job with data:", jobData);
+            const response = await employerAPI.updateJob(id!, jobData);
+            console.log("Update response:", response);
+
             toast.success("Job updated successfully!");
             navigate(`/employer/projects/${id}`);
         } catch (error: any) {
             console.error("Error updating job:", error);
-            toast.error(error.message || "Failed to update job");
+            console.error("Error details:", error.response?.data || error.message);
+            toast.error(error.response?.data?.message || error.message || "Failed to update job");
         } finally {
             setSaving(false);
         }

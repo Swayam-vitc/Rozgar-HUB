@@ -1,0 +1,21 @@
+{
+  "name": "rgh",
+  "version": "1.0.0",
+  "description": "![Linus Torvalds GIF](https://media.tenor.com/5bBivcvxYj4AAAAd/linus-nvidia-fuck-you-nvidia-linux-linus-torvalds.gif)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Swayam-vitc/RGH.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Swayam-vitc/RGH/issues"
+  },
+  "homepage": "https://github.com/Swayam-vitc/RGH#readme"
+}

@@ -9,7 +9,8 @@ import {
   Menu,
   X,
   Briefcase,
-  FileText
+  FileText,
+  User
 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ export function EmployerSidebar() {
     { name: t('nav.applications'), href: "/employer/applications", icon: FileText },
     { name: t('nav.payments'), href: "/employer/payments", icon: CreditCard },
     { name: t('nav.messages'), href: "/employer/messages", icon: MessageSquare, badge: unreadCount },
+    { name: t('nav.profile'), href: "/employer/profile", icon: User },
   ];
 
   return (

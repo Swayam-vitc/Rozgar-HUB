@@ -303,17 +303,17 @@ export const getAllApplications = async (req, res) => {
     }
 };
 
-// @desc    Accept/reject application
+// @desc    Accept/reject/hire application
 // @route   PUT /api/employer/applications/:id
 // @access  Private (Employer)
 export const updateApplicationStatus = async (req, res) => {
     try {
         const { status } = req.body;
 
-        if (!['accepted', 'rejected'].includes(status)) {
+        if (!['accepted', 'rejected', 'hired'].includes(status)) {
             return res.status(400).json({
                 success: false,
-                message: 'Invalid status'
+                message: 'Invalid status. Must be "accepted", "rejected", or "hired"'
             });
         }
 
@@ -337,11 +337,14 @@ export const updateApplicationStatus = async (req, res) => {
         application.status = status;
         await application.save();
 
-        // If accepted, update job status and create calendar event
-        if (status === 'accepted') {
+        // If accepted or hired, update job status and create calendar event
+        if (status === 'accepted' || status === 'hired') {
             await Job.findByIdAndUpdate(application.jobId._id, {
                 status: 'in-progress'
             });
+
+            // Import CalendarEvent model
+            const CalendarEvent = (await import('../models/CalendarEvent.js')).default;
 
             // Create calendar event for worker
             await CalendarEvent.create({
@@ -350,7 +353,19 @@ export const updateApplicationStatus = async (req, res) => {
                 end: application.jobId.endDate || application.jobId.startDate,
                 jobId: application.jobId._id,
                 userId: application.workerId,
-                location: application.jobId.location
+                location: `${application.jobId.location.city}, ${application.jobId.location.state}`,
+                color: status === 'hired' ? '#10B981' : '#FF9933' // Green for hired, orange for accepted
+            });
+
+            // Create notification for worker
+            await Notification.create({
+                userId: application.workerId,
+                type: 'application',
+                title: status === 'hired' ? 'You\'re Hired!' : 'Application Accepted',
+                message: `${req.user.companyName || req.user.name} has ${status === 'hired' ? 'hired you' : 'accepted your application'} for: ${application.jobId.title}`,
+                relatedId: application._id,
+                relatedModel: 'Application',
+                actionUrl: `/worker/applications`
             });
         }
 

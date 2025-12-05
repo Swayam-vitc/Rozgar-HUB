@@ -31,6 +31,7 @@ import EmployerWorkerProfile from "./pages/employer/WorkerProfile";
 import EmployerApplications from "./pages/employer/Applications";
 import EmployerPayments from "./pages/employer/Payments";
 import EmployerMessages from "./pages/employer/Messages";
+import EmployerProfile from "./pages/employer/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import { SocketProvider } from "./contexts/SocketContext";
@@ -168,6 +169,11 @@ const App = () => (
               <Route path="/employer/messages" element={
                 <ProtectedRoute requiredRole="employer">
                   <EmployerMessages />
+                </ProtectedRoute>
+              } />
+              <Route path="/employer/profile" element={
+                <ProtectedRoute requiredRole="employer">
+                  <EmployerProfile />
                 </ProtectedRoute>
               } />
 

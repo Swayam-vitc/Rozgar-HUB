@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { WorkerSidebar } from "@/components/WorkerSidebar";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, IndianRupee, Building } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { MapPin, Calendar, IndianRupee, Building, ChevronDown, ChevronUp, Clock, Briefcase } from "lucide-react";
 import { workerAPI } from "@/lib/api";
 import { toast } from "sonner";
 
 export default function MyApplications() {
+    const navigate = useNavigate();
     const [applications, setApplications] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [expandedId, setExpandedId] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchApplications = async () => {
@@ -33,15 +37,21 @@ export default function MyApplications() {
 
     const getStatusColor = (status: string) => {
         switch (status) {
+            case "hired":
+                return "default"; // Green - most important status
             case "accepted":
-                return "default"; // Greenish usually
+                return "secondary"; // Blue-ish
             case "rejected":
                 return "destructive";
             case "pending":
-                return "secondary";
+                return "outline";
             default:
                 return "outline";
         }
+    };
+
+    const toggleExpand = (id: string) => {
+        setExpandedId(expandedId === id ? null : id);
     };
 
     return (
@@ -53,7 +63,7 @@ export default function MyApplications() {
                     <div className="mb-8">
                         <h1 className="text-3xl md:text-4xl font-bold mb-2">My Applications</h1>
                         <p className="text-muted-foreground">
-                            Track the status of your job applications
+                            Track the Status of Your Job Applications
                         </p>
                     </div>
 
@@ -72,7 +82,7 @@ export default function MyApplications() {
                                 <Card key={app._id} className="shadow-card hover:shadow-elevated transition-shadow">
                                     <CardHeader>
                                         <div className="flex items-start justify-between">
-                                            <div>
+                                            <div className="flex-1">
                                                 <CardTitle className="text-xl mb-2">{app.jobId?.title || "Job Title Unavailable"}</CardTitle>
                                                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                                                     <div className="flex items-center gap-1">
@@ -97,15 +107,118 @@ export default function MyApplications() {
                                         </div>
                                     </CardHeader>
                                     <CardContent>
-                                        <div className="flex items-center justify-between mt-2">
-                                            <div className="flex items-center gap-1 font-medium">
-                                                <IndianRupee className="h-4 w-4" />
-                                                {app.jobId?.payAmount}/{app.jobId?.payType}
+                                        {/* Quick Info */}
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center gap-1 font-medium text-lg">
+                                                <IndianRupee className="h-5 w-5 text-green-600" />
+                                                <span className="text-green-600">₹{app.jobId?.payAmount}</span>
+                                                <span className="text-sm text-muted-foreground">/{app.jobId?.payType}</span>
                                             </div>
-                                            {app.status === 'accepted' && (
-                                                <Button size="sm" variant="outline">View Details</Button>
-                                            )}
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => toggleExpand(app._id)}
+                                                className="flex items-center gap-1"
+                                            >
+                                                {expandedId === app._id ? (
+                                                    <>
+                                                        <span>Hide Details</span>
+                                                        <ChevronUp className="h-4 w-4" />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>View Details</span>
+                                                        <ChevronDown className="h-4 w-4" />
+                                                    </>
+                                                )}
+                                            </Button>
                                         </div>
+
+                                        {/* Expanded Details */}
+                                        {expandedId === app._id && (
+                                            <div className="space-y-4 pt-4 border-t">
+                                                {/* Job Description */}
+                                                {app.jobId?.description && (
+                                                    <div>
+                                                        <h4 className="font-semibold mb-2 flex items-center gap-2">
+                                                            <Briefcase className="h-4 w-4" />
+                                                            Job Description
+                                                        </h4>
+                                                        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                                            {app.jobId.description}
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                <Separator />
+
+                                                {/* Job Details Grid */}
+                                                <div className="grid md:grid-cols-2 gap-4">
+                                                    {app.jobId?.startDate && (
+                                                        <div>
+                                                            <h4 className="font-semibold mb-1 flex items-center gap-2 text-sm">
+                                                                <Calendar className="h-4 w-4" />
+                                                                Start Date
+                                                            </h4>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                {new Date(app.jobId.startDate).toLocaleDateString('en-IN', {
+                                                                    weekday: 'long',
+                                                                    year: 'numeric',
+                                                                    month: 'long',
+                                                                    day: 'numeric'
+                                                                })}
+                                                            </p>
+                                                        </div>
+                                                    )}
+
+                                                    {app.jobId?.duration && (
+                                                        <div>
+                                                            <h4 className="font-semibold mb-1 flex items-center gap-2 text-sm">
+                                                                <Clock className="h-4 w-4" />
+                                                                Duration
+                                                            </h4>
+                                                            <p className="text-sm text-muted-foreground">{app.jobId.duration}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Skills Required */}
+                                                {app.jobId?.skills && app.jobId.skills.length > 0 && (
+                                                    <div>
+                                                        <h4 className="font-semibold mb-2 text-sm">Skills Required</h4>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {app.jobId.skills.map((skill: string) => (
+                                                                <Badge key={skill} variant="secondary" className="text-xs">
+                                                                    {skill}
+                                                                </Badge>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Application Message */}
+                                                {app.message && (
+                                                    <div>
+                                                        <h4 className="font-semibold mb-2 text-sm">Your Application Message</h4>
+                                                        <div className="bg-muted/50 p-3 rounded-lg">
+                                                            <p className="text-sm italic">"{app.message}"</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Status-specific Actions */}
+                                                {(app.status === 'accepted' || app.status === 'hired') && (
+                                                    <div className="pt-2">
+                                                        <Button
+                                                            className="w-full gradient-hero text-white"
+                                                            onClick={() => navigate('/worker/calendar')}
+                                                        >
+                                                            View Calendar Event
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
                                     </CardContent>
                                 </Card>
                             ))

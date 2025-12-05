@@ -13,14 +13,18 @@ import {
     Calendar,
     CheckCircle,
     XCircle,
-    Phone
+    Phone,
+    MessageCircle
 } from "lucide-react";
 import { workerAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function WorkRequests() {
+    const navigate = useNavigate();
     const [requests, setRequests] = useState<any[]>([]);
+    const [acceptedRequests, setAcceptedRequests] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [processingId, setProcessingId] = useState<string | null>(null);
 
@@ -31,17 +35,21 @@ export default function WorkRequests() {
     const fetchHireRequests = async () => {
         try {
             setLoading(true);
-            const response = await workerAPI.getHireRequests({ status: 'pending' }) as any;
-            console.log("Hire Requests Response:", response);
 
-            // Handle both direct data and axios response structure
-            const data = response.data || response;
+            // Fetch pending requests
+            const pendingResponse = await workerAPI.getHireRequests({ status: 'pending' }) as any;
+            const pendingData = pendingResponse.data || pendingResponse;
+            if (pendingData.success) {
+                setRequests(pendingData.hireRequests || []);
+            }
 
-            if (data.success) {
-                setRequests(data.hireRequests || []);
-            } else {
-                console.error("Failed to fetch requests:", data);
-                toast.error(data.message || "Failed to load work requests");
+            // Fetch accepted requests (not completed)
+            const acceptedResponse = await workerAPI.getHireRequests({ status: 'accepted' }) as any;
+            const acceptedData = acceptedResponse.data || acceptedResponse;
+            if (acceptedData.success) {
+                // Filter out completed requests
+                const activeAccepted = (acceptedData.hireRequests || []).filter((req: any) => !req.completed);
+                setAcceptedRequests(activeAccepted);
             }
         } catch (error: any) {
             console.error("Error fetching hire requests:", error);
@@ -51,15 +59,16 @@ export default function WorkRequests() {
         }
     };
 
+
     const handleAccept = async (requestId: string) => {
         try {
             setProcessingId(requestId);
             const response = await workerAPI.updateHireRequest(requestId, { status: 'accepted' }) as any;
 
             if (response.success) {
-                toast.success("Work request accepted! Added to your Calendar.");
-                // Remove from pending list
-                setRequests(requests.filter(req => req._id !== requestId));
+                toast.success("Work request accepted! You can now chat with the employer.");
+                // Refresh both lists
+                fetchHireRequests();
             }
         } catch (error: any) {
             console.error("Error accepting request:", error);
@@ -233,6 +242,107 @@ export default function WorkRequests() {
                                     </Card>
                                 </motion.div>
                             ))}
+                        </div>
+                    )}
+
+                    {/* Accepted Requests Section - Show Chat Option */}
+                    {!loading && acceptedRequests.length > 0 && (
+                        <div className="mt-12">
+                            <div className="mb-6">
+                                <h2 className="text-2xl font-bold mb-2">Accepted Jobs</h2>
+                                <p className="text-muted-foreground">
+                                    Jobs you've accepted - click Chat to message the employer
+                                </p>
+                            </div>
+                            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {acceptedRequests.map((request, index) => (
+                                    <motion.div
+                                        key={request._id}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: index * 0.1 }}
+                                    >
+                                        <Card className="shadow-card hover:shadow-elevated transition-all duration-200 h-full flex flex-col border-l-4 border-l-green-500">
+                                            <CardHeader className="pb-3">
+                                                {/* Employer Info */}
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <Avatar className="h-12 w-12">
+                                                        <AvatarImage src={request?.employerPhoto} />
+                                                        <AvatarFallback className="gradient-saffron text-white">
+                                                            {request?.employerName?.[0] || "?"}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex-1">
+                                                        <h3 className="font-semibold text-sm">{request?.employerName || "Unknown Employer"}</h3>
+                                                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                                            <Phone className="h-3 w-3" />
+                                                            <span>{request?.employerPhoneNumber || "No phone available"}</span>
+                                                        </div>
+                                                    </div>
+                                                    <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                                                        Active
+                                                    </Badge>
+                                                </div>
+
+                                                {/* Job Title */}
+                                                <h2 className="text-xl font-bold leading-tight mb-2">
+                                                    {request?.jobTitle || "General Work Request"}
+                                                </h2>
+                                            </CardHeader>
+
+                                            <CardContent className="flex-1 space-y-3">
+                                                {/* Job Description */}
+                                                {request?.jobDescription && (
+                                                    <p className="text-sm text-muted-foreground line-clamp-2">
+                                                        {request.jobDescription}
+                                                    </p>
+                                                )}
+
+                                                <Separator />
+
+                                                {/* Location */}
+                                                {(request?.jobLocation?.city || request?.jobLocation?.state) && (
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                                                        <span>
+                                                            {[request?.jobLocation?.city, request?.jobLocation?.state]
+                                                                .filter(Boolean)
+                                                                .join(', ')}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {/* Salary */}
+                                                {(request?.salaryAmount || 0) > 0 && (
+                                                    <div className="flex items-center gap-2">
+                                                        <IndianRupee className="h-4 w-4 text-muted-foreground" />
+                                                        <div>
+                                                            <span className="font-bold text-lg text-primary">
+                                                                ₹{request.salaryAmount}
+                                                            </span>
+                                                            {request?.salaryType && (
+                                                                <Badge variant="secondary" className="ml-2 text-xs">
+                                                                    {request.salaryType}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+
+                                            <CardFooter className="pt-4">
+                                                <Button
+                                                    className="w-full gradient-hero text-white"
+                                                    onClick={() => navigate('/worker/messages')}
+                                                >
+                                                    <MessageCircle className="h-4 w-4 mr-2" />
+                                                    Chat with Employer
+                                                </Button>
+                                            </CardFooter>
+                                        </Card>
+                                    </motion.div>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>

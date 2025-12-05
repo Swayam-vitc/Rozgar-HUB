@@ -14,7 +14,7 @@ import {
   IndianRupee,
   TrendingUp,
 } from "lucide-react";
-import { employerAPI } from "@/lib/api";
+import { employerAPI, paymentAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -32,21 +32,37 @@ export default function EmployerDashboard() {
     paymentsCount: 0
   });
   const [activeProjects, setActiveProjects] = useState<any[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const [analyticsRes, jobsRes] = await Promise.all([
+        const [analyticsRes, hireRequestsRes, paymentsRes] = await Promise.all([
           employerAPI.getAnalytics() as Promise<any>,
-          employerAPI.getJobs({ status: 'open' }) as Promise<any>
+          employerAPI.getHireRequests() as Promise<any>,
+          paymentAPI.getPaymentHistory() as Promise<any>
         ]);
 
         if (analyticsRes.success) {
           setAnalytics(analyticsRes.analytics);
         }
 
-        if (jobsRes.success) {
-          setActiveProjects(jobsRes.jobs);
+        // Get hire requests for recent projects (accepted/ongoing work)
+        if (hireRequestsRes.success) {
+          const activeHires = (hireRequestsRes.hireRequests || [])
+            .filter((hr: any) => hr.status === 'accepted' && !hr.completed);
+          setActiveProjects(activeHires);
+        }
+
+        if (paymentsRes.success) {
+          setPaymentHistory(paymentsRes.payments || []);
+          // Calculate real total spent from payments where paid=true
+          const totalSpent = (paymentsRes.payments || [])
+            .filter((p: any) => p.paid === true)
+            .reduce((sum: number, p: any) => sum + p.amount, 0);
+
+          setAnalytics(prev => ({ ...prev, totalSpent }));
         }
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -148,18 +164,28 @@ export default function EmployerDashboard() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {activeProjects.slice(0, 4).map((job) => (
+                  {activeProjects.slice(0, 4).map((hire) => (
                     <div
-                      key={job._id}
-                      className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors"
+                      key={hire._id}
+                      className="flex items-center justify-between p-4 rounded-lg border hover:border-primary transition-colors cursor-pointer"
+                      onClick={() => navigate('/employer/messages')}
                     >
                       <div className="flex-1">
-                        <h3 className="font-semibold">{job.title}</h3>
-                        <p className="text-sm text-muted-foreground">{job.location?.city}, {job.location?.state}</p>
+                        <h3 className="font-semibold">{hire.jobTitle}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Worker: {hire.workerName || 'N/A'}
+                        </p>
+                        {hire.workLocation?.address && (
+                          <p className="text-xs text-muted-foreground">
+                            📍 {hire.workLocation.address}
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">₹{job.budget || job.payAmount}/{job.payType}</p>
-                        <p className="text-sm text-muted-foreground capitalize">{job.status}</p>
+                        <p className="font-medium">₹{hire.salaryAmount}/{hire.salaryType}</p>
+                        <p className="text-sm text-green-600 capitalize">
+                          {hire.paid ? '✓ Paid' : hire.completed ? 'Completed' : 'Ongoing'}
+                        </p>
                       </div>
                     </div>
                   ))}

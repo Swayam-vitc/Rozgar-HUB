@@ -158,6 +158,9 @@ export const completeJobWithRating = async (req, res) => {
             // Update completed jobs count
             worker.completedJobs = (worker.completedJobs || 0) + 1;
 
+            // Update streak (Snapchat-style - resets if no task in 24hrs)
+            worker.updateStreak();
+
             // Calculate and update rank
             const newRank = calculateRank(worker.ratings, worker.level);
             const rankChanged = newRank !== worker.level;
@@ -174,7 +177,8 @@ export const completeJobWithRating = async (req, res) => {
                     totalRatings: worker.totalRatings,
                     level: worker.level,
                     rankChanged,
-                    completedJobs: worker.completedJobs
+                    completedJobs: worker.completedJobs,
+                    streak: worker.streak
                 }
             });
         } else {

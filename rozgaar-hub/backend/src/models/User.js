@@ -84,6 +84,10 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    lastTaskCompletedAt: {
+        type: Date,
+        default: null
+    },
     level: {
         type: String,
         enum: ['bronze', 'silver', 'gold', 'diamond'],
@@ -211,6 +215,29 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
     } catch (error) {
         throw new Error('Password comparison failed');
     }
+};
+
+// Method to update streak based on task completion
+userSchema.methods.updateStreak = function () {
+    const now = new Date();
+    const lastTask = this.lastTaskCompletedAt;
+
+    if (!lastTask) {
+        // First task ever completed
+        this.streak = 1;
+    } else {
+        const hoursSinceLastTask = (now - lastTask) / (1000 * 60 * 60);
+
+        if (hoursSinceLastTask <= 24) {
+            // Continue streak - completed task within 24 hours
+            this.streak += 1;
+        } else {
+            // Reset streak - more than 24 hours since last task
+            this.streak = 1;
+        }
+    }
+
+    this.lastTaskCompletedAt = now;
 };
 
 // Method to get public profile (without sensitive data)

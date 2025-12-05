@@ -24,9 +24,9 @@ import {
   XCircle,
   Phone,
 } from "lucide-react";
-import { mockPayments, mockCalendarEvents } from "@/lib/mockData";
+import { mockCalendarEvents } from "@/lib/mockData";
 import { useNavigate } from "react-router-dom";
-import { workerAPI } from "@/lib/api";
+import { workerAPI, paymentAPI, calendarAPI } from "@/lib/api";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
 
@@ -38,6 +38,9 @@ export default function WorkerDashboard() {
   const [loading, setLoading] = useState(true);
   const [ongoingJobs, setOngoingJobs] = useState<any[]>([]);
   const [rejectedJobs, setRejectedJobs] = useState<any[]>([]);
+  const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
+  const [todaysTasks, setTodaysTasks] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -50,10 +53,12 @@ export default function WorkerDashboard() {
           setWorkerProfile(profileResponse.worker);
         }
 
-        // Fetch accepted hire requests (ongoing jobs)
+        // Fetch accepted hire requests (ongoing jobs) - exclude completed ones
         const acceptedResponse = await workerAPI.getHireRequests({ status: 'accepted' }) as any;
         if (acceptedResponse.success) {
-          setOngoingJobs(acceptedResponse.hireRequests || []);
+          // Filter out completed jobs from ongoing jobs
+          const activeJobs = (acceptedResponse.hireRequests || []).filter((job: any) => !job.completed);
+          setOngoingJobs(activeJobs);
         }
 
         // Fetch rejected hire requests
@@ -61,6 +66,31 @@ export default function WorkerDashboard() {
         if (rejectedResponse.success) {
           setRejectedJobs(rejectedResponse.hireRequests || []);
         }
+
+        // Fetch payment data
+        const [paymentsRes, pendingRes] = await Promise.all([
+          paymentAPI.getPaymentHistory(),
+          paymentAPI.getPendingPayments()
+        ]);
+
+        if ((paymentsRes as any).success) {
+          setPaymentHistory((paymentsRes as any).payments || []);
+        }
+
+        if ((pendingRes as any).success) {
+          setPendingPayments((pendingRes as any).pendingPayments || []);
+        }
+
+        // Fetch today's tasks
+        try {
+          const tasksRes = await calendarAPI.getTodaysTasks() as any;
+          if (tasksRes.success) {
+            setTodaysTasks(tasksRes.tasks || []);
+          }
+        } catch (error) {
+          console.log("No today's tasks");
+        }
+
       } catch (error) {
         console.error("Error fetching data:", error);
         toast.error("Failed to load dashboard data");
@@ -94,8 +124,6 @@ export default function WorkerDashboard() {
   }
 
   if (!workerProfile) return null;
-
-  const pendingPayments = mockPayments.filter((p) => p.status === "pending");
   const totalPending = pendingPayments.reduce((sum, p) => sum + p.amount, 0);
 
   return (
@@ -325,22 +353,30 @@ export default function WorkerDashboard() {
                   <CardTitle className="text-lg">{t("dashboard.todaysTasks")}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="h-2 w-2 rounded-full bg-primary mt-2" />
-                      <div className="flex-1">
-                        <p className="font-medium">Construction Work</p>
-                        <p className="text-sm text-muted-foreground">9:00 AM - 6:00 PM</p>
-                      </div>
+                  {todaysTasks.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      No tasks scheduled for today
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {todaysTasks.map((task) => (
+                        <div key={task.id} className="flex items-start gap-3">
+                          <div className="h-2 w-2 rounded-full bg-primary mt-2" />
+                          <div className="flex-1">
+                            <p className="font-medium">{task.jobTitle}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {task.scheduledTime} • {task.employer.name}
+                            </p>
+                            {task.workLocation?.address && (
+                              <p className="text-xs text-muted-foreground truncate">
+                                📍 {task.workLocation.address}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div className="flex items-start gap-3">
-                      <div className="h-2 w-2 rounded-full bg-accent mt-2" />
-                      <div className="flex-1">
-                        <p className="font-medium">Submit Invoice</p>
-                        <p className="text-sm text-muted-foreground">Before 8:00 PM</p>
-                      </div>
-                    </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

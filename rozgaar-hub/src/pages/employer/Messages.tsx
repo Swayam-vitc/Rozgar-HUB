@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { useAuthStore } from "@/store/authStore";
 import { RatingModal } from "@/components/RatingModal";
+import { PaymentModal } from "@/components/PaymentModal";
 import axios from "axios";
 import { useTranslation } from "react-i18next";
 import { useNotification } from "@/hooks/useNotification";
@@ -67,6 +68,8 @@ export default function Messages() {
   const [sending, setSending] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [ratingConversation, setRatingConversation] = useState<Conversation | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentConversation, setPaymentConversation] = useState<Conversation | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch conversations on mount
@@ -221,14 +224,16 @@ export default function Messages() {
     }
   };
 
-  const handlePayment = async (connectionId: string) => {
-    try {
-      await employerAPI.markHireRequestPaid(connectionId);
-      toast.success(t('paymentComplete'));
-      fetchConversations();
-    } catch (error) {
-      console.error("Error processing payment:", error);
-      toast.error(t('paymentError'));
+  const handlePayment = (conversation: Conversation) => {
+    setPaymentConversation(conversation);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    fetchConversations();
+    // Refresh selected conversation if it's the one that was paid
+    if (selectedConversation && paymentConversation?.connectionId === selectedConversation.connectionId) {
+      fetchMessages(selectedConversation.connectionId);
     }
   };
 
@@ -334,7 +339,7 @@ export default function Messages() {
                               size="sm"
                               variant="outline"
                               className="text-xs"
-                              onClick={() => handlePayment(conv.connectionId)}
+                              onClick={() => handlePayment(conv)}
                             >
                               <CreditCard className="h-3 w-3 mr-1" />
                               {t('pay')}
@@ -477,6 +482,25 @@ export default function Messages() {
           }}
           onSubmit={handleSubmitRating}
           workerName={ratingConversation.otherUser.name}
+        />
+      )}
+
+      {/* Payment Modal */}
+      {paymentConversation && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => {
+            setShowPaymentModal(false);
+            setPaymentConversation(null);
+          }}
+          hireRequest={{
+            id: paymentConversation.connectionId,
+            workerName: paymentConversation.otherUser.name,
+            jobTitle: paymentConversation.jobTitle,
+            amount: 500, // TODO: Get from conversation
+            salaryType: 'fixed'
+          }}
+          onPaymentSuccess={handlePaymentSuccess}
         />
       )}
     </div>

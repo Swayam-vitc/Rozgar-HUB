@@ -14,6 +14,8 @@ import messageRoutes from './routes/messageRoutes.js';
 import walletRoutes from './routes/walletRoutes.js';
 import rechargeRoutes from './routes/rechargeRoutes.js';
 import billRoutes from './routes/billRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
+import calendarRoutes from './routes/calendarRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -77,6 +79,8 @@ app.use('/api', userRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/recharge', rechargeRoutes);
 app.use('/api/bills', billRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/calendar', calendarRoutes);
 
 // 404 handler
 app.use((req, res) => {

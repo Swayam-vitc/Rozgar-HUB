@@ -45,7 +45,10 @@ export default function Workers() {
     city: "",
     salaryType: "daily",
     salaryAmount: "",
-    message: ""
+    message: "",
+    scheduledDate: "",
+    scheduledTime: "",
+    workAddress: ""
   });
 
   const fetchWorkers = async (query = "") => {
@@ -90,7 +93,10 @@ export default function Workers() {
       city: worker.location?.city || "",
       salaryType: "daily",
       salaryAmount: worker.dailyRate?.toString() || "",
-      message: ""
+      message: "",
+      scheduledDate: "",
+      scheduledTime: "",
+      workAddress: ""
     });
     setHireDialogOpen(true);
   };
@@ -115,7 +121,10 @@ export default function Workers() {
         },
         salaryType: hireForm.salaryType,
         salaryAmount: parseFloat(hireForm.salaryAmount),
-        message: hireForm.message
+        message: hireForm.message,
+        scheduledDate: hireForm.scheduledDate,
+        scheduledTime: hireForm.scheduledTime,
+        workAddress: hireForm.workAddress
       }) as any;
 
       if (response.success) {
@@ -129,7 +138,10 @@ export default function Workers() {
           city: "",
           salaryType: "daily",
           salaryAmount: "",
-          message: ""
+          message: "",
+          scheduledDate: "",
+          scheduledTime: "",
+          workAddress: ""
         });
       }
     } catch (error: any) {
@@ -251,7 +263,7 @@ export default function Workers() {
 
       {/* Hire Dialog */}
       <Dialog open={hireDialogOpen} onOpenChange={setHireDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Hire {selectedWorker?.name}</DialogTitle>
             <DialogDescription>
@@ -340,6 +352,45 @@ export default function Workers() {
                 placeholder="Any additional message..."
                 rows={2}
               />
+            </div>
+
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium mb-3">Schedule & Location (Optional)</p>
+
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="scheduledDate">Work Date</Label>
+                  <Input
+                    id="scheduledDate"
+                    type="date"
+                    value={hireForm.scheduledDate}
+                    onChange={(e) => setHireForm({ ...hireForm, scheduledDate: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="scheduledTime">Work Time</Label>
+                  <Input
+                    id="scheduledTime"
+                    type="time"
+                    value={hireForm.scheduledTime}
+                    onChange={(e) => setHireForm({ ...hireForm, scheduledTime: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label htmlFor="workAddress">Work Address</Label>
+                <Input
+                  id="workAddress"
+                  value={hireForm.workAddress}
+                  onChange={(e) => setHireForm({ ...hireForm, workAddress: e.target.value })}
+                  placeholder="Enter full work address..."
+                />
+                <p className="text-xs text-muted-foreground">
+                  Worker will see this in their calendar
+                </p>
+              </div>
             </div>
           </div>
 

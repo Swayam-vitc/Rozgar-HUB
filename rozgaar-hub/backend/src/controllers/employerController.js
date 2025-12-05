@@ -5,6 +5,7 @@ import User from '../models/User.js';
 import CustomJobTitle from '../models/CustomJobTitle.js';
 import HireRequest from '../models/HireRequest.js';
 import Notification from '../models/Notification.js';
+import { geocodeAddress } from '../services/geocodingService.js';
 
 // @desc    Get employer profile
 // @route   GET /api/employer/profile
@@ -557,13 +558,31 @@ export const hireWorker = async (req, res) => {
             jobLocation,
             salaryType,
             salaryAmount,
-            message
+            message,
+            scheduledDate,
+            scheduledTime,
+            workAddress
         } = req.body;
 
         if (!workerId) {
             return res.status(400).json({
                 success: false,
                 message: 'Worker ID is required'
+            });
+        }
+
+        // Validate scheduling fields
+        if (scheduledDate && !scheduledTime) {
+            return res.status(400).json({
+                success: false,
+                message: 'Scheduled time is required when date is provided'
+            });
+        }
+
+        if (scheduledTime && !scheduledDate) {
+            return res.status(400).json({
+                success: false,
+                message: 'Scheduled date is required when time is provided'
             });
         }
 
@@ -596,11 +615,12 @@ export const hireWorker = async (req, res) => {
             }
         }
 
-        // Check if hiring request already exists
+        // Check if hiring request already exists (excluding completed ones)
         const existingRequest = await HireRequest.findOne({
             employerId: req.user._id,
             workerId,
-            status: { $in: ['pending', 'accepted'] }
+            status: { $in: ['pending', 'accepted'] },
+            completed: false  // Allow rehiring after job completion
         });
 
         if (existingRequest) {
@@ -608,6 +628,34 @@ export const hireWorker = async (req, res) => {
                 success: false,
                 message: 'You already have a pending or active hiring request for this worker'
             });
+        }
+
+        // Geocode work address if provided
+        let locationData = {
+            address: '',
+            coordinates: { lat: null, lng: null },
+            city: '',
+            state: '',
+            formatted: ''
+        };
+
+        if (workAddress && workAddress.trim()) {
+            const geocodedResult = await geocodeAddress(workAddress.trim());
+            if (geocodedResult.success) {
+                locationData = {
+                    address: workAddress.trim(),
+                    coordinates: {
+                        lat: geocodedResult.location.lat,
+                        lng: geocodedResult.location.lng
+                    },
+                    city: geocodedResult.location.city,
+                    state: geocodedResult.location.state,
+                    formatted: geocodedResult.location.formatted
+                };
+            } else {
+                // If geocoding fails, still store the address
+                locationData.address = workAddress.trim();
+            }
         }
 
         // Create hiring request
@@ -623,7 +671,10 @@ export const hireWorker = async (req, res) => {
             jobLocation: jobLocation || { state: '', city: '' },
             salaryType: salaryType || '',
             salaryAmount: salaryAmount || 0,
-            message: message || ''
+            message: message || '',
+            scheduledDate: scheduledDate ? new Date(scheduledDate) : null,
+            scheduledTime: scheduledTime || '',
+            workLocation: locationData
         });
 
         // Create notification for worker
@@ -651,4 +702,28 @@ export const hireWorker = async (req, res) => {
     }
 };
 
+// @desc    Get employer's hire requests
+// @route   GET /api/employer/hire-requests
+// @access  Private (Employer)
+export const getHireRequests = async (req, res) => {
+    try {
+        const employerId = req.user._id;
 
+        const hireRequests = await HireRequest.find({ employerId })
+            .populate('workerId', 'name phone profilePhoto skills rating')
+            .sort({ createdAt: -1 });
+
+        res.json({
+            success: true,
+            count: hireRequests.length,
+            hireRequests
+        });
+    } catch (error) {
+        console.error('Error fetching hire requests:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Error fetching hire requests',
+            error: error.message
+        });
+    }
+};

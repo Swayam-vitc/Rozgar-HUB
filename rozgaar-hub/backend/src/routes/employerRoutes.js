@@ -14,7 +14,8 @@ import {
     createCustomJobTitle,
     getCustomJobTitles,
     getWorkerById,
-    hireWorker
+    hireWorker,
+    getHireRequests
 } from '../controllers/employerController.js';
 import { markAsPaid, completeJobWithRating } from '../controllers/ratingController.js';
 import { protect, requireEmployer } from '../middleware/auth.js';
@@ -40,6 +41,7 @@ router.post('/job-titles', createCustomJobTitle);
 router.get('/job-titles', getCustomJobTitles);
 router.get('/worker/:id', getWorkerById);
 router.post('/hire', hireWorker);
+router.get('/hire-requests', getHireRequests);
 
 // Payment and rating routes
 router.post('/hire-requests/:id/pay', markAsPaid);

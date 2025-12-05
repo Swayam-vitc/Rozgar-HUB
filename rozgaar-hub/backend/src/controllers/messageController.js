@@ -126,21 +126,46 @@ export const getMessages = async (req, res) => {
             });
         }
 
-        // Fetch messages with pagination
+        // Find ALL hire requests between same worker and employer (for conversation continuity)
+        const allHireRequests = await HireRequest.find({
+            workerId: connection.workerId,
+            employerId: connection.employerId
+        })
+            .sort({ createdAt: 1 })
+            .select('_id rating feedback completed completedAt createdAt');
+
+        // Get all connection IDs for messages
+        const allConnectionIds = allHireRequests.map(hr => hr._id);
+
+        // Fetch messages from ALL connections (for conversation continuity)
         const skip = (parseInt(page) - 1) * parseInt(limit);
-        const messages = await Message.find({ connectionId })
+        const messages = await Message.find({ connectionId: { $in: allConnectionIds } })
             .populate('senderId', 'name profilePhoto')
             .populate('receiverId', 'name profilePhoto')
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(parseInt(limit));
 
-        const totalMessages = await Message.countDocuments({ connectionId });
+        const totalMessages = await Message.countDocuments({ connectionId: { $in: allConnectionIds } });
         const hasMore = skip + messages.length < totalMessages;
+
+        // Format completed hire requests as rating separators
+        const ratingSeparators = allHireRequests
+            .filter(hr => hr.completed && hr.rating)
+            .map(hr => ({
+                type: 'rating_separator',
+                hireRequestId: hr._id,
+                rating: hr.rating,
+                feedback: hr.feedback,
+                completedAt: hr.completedAt,
+                timestamp: hr.completedAt
+            }));
 
         res.json({
             success: true,
             messages: messages.reverse(), // Reverse to show oldest first
+            ratingSeparators, // Include rating separators for frontend to insert
+            allHireRequests, // Include all hire requests for context
             pagination: {
                 page: parseInt(page),
                 limit: parseInt(limit),

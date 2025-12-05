@@ -96,6 +96,7 @@ export const employerAPI = {
     createJobTitle: (title) => api.post('/employer/job-titles', { title }),
     getJobTitles: () => api.get('/employer/job-titles'),
     hireWorker: (data: any) => api.post('/employer/hire', data),
+    getHireRequests: () => api.get('/employer/hire-requests'),
     markHireRequestPaid: (id: string) => api.post(`/employer/hire-requests/${id}/pay`),
     completeJobWithRating: (id: string, data: { rating: number; feedback: string }) => api.post(`/employer/hire-requests/${id}/complete`, data)
 };
@@ -142,6 +143,29 @@ export const rechargeAPI = {
     getOperators: () => api.get('/recharge/operators'),
     mobileRecharge: (data: { mobileNumber: string; operator: string; amount: number }) => api.post('/recharge/mobile', data),
     dthRecharge: (data: { subscriberId: string; operator: string; amount: number }) => api.post('/recharge/dth', data)
+};
+
+// Payment API (Razorpay)
+export const paymentAPI = {
+    createOrder: (hireRequestId: string) => api.post('/payments/create-order', { hireRequestId }),
+    verifyPayment: (data: {
+        razorpay_order_id: string;
+        razorpay_payment_id: string;
+        razorpay_signature: string;
+        hireRequestId: string;
+        simulationMode?: boolean;
+    }) => api.post('/payments/verify', data),
+    getPaymentHistory: () => api.get('/payments/history'),
+    getPendingPayments: () => api.get('/payments/pending')
+};
+
+// Calendar API
+export const calendarAPI = {
+    getTodaysTasks: () => api.get('/calendar/today'),
+    getCalendarEvents: (params?: { start?: string; end?: string }) =>
+        api.get('/calendar/events', { params }),
+    getUpcomingTasks: (limit?: number) =>
+        api.get('/calendar/upcoming', { params: { limit } })
 };
 
 // Bill Payment API

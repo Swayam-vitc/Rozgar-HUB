@@ -84,6 +84,42 @@ const hireRequestSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    // Razorpay payment fields
+    razorpayOrderId: {
+        type: String,
+        default: ''
+    },
+    razorpayPaymentId: {
+        type: String,
+        default: ''
+    },
+    razorpaySignature: {
+        type: String,
+        default: ''
+    },
+    paidAt: {
+        type: Date,
+        default: null
+    },
+    // Scheduling and location fields
+    scheduledDate: {
+        type: Date,
+        default: null
+    },
+    scheduledTime: {
+        type: String, // e.g., "09:00 AM"
+        default: ''
+    },
+    workLocation: {
+        address: { type: String, default: '' },
+        coordinates: {
+            lat: { type: Number },
+            lng: { type: Number }
+        },
+        city: { type: String, default: '' },
+        state: { type: String, default: '' },
+        formatted: { type: String, default: '' }
+    },
     completedAt: {
         type: Date,
         default: null

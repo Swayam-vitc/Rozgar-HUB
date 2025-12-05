@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useState, useEffect, useRef } from "react";
-import { Send, Loader2, MessageCircle, Star } from "lucide-react";
+import { Send, Loader2, MessageCircle, Star, Check, CheckCheck } from "lucide-react";
 import { messageAPI } from "@/lib/api";
 import { useSocket } from "@/contexts/SocketContext";
 import { toast } from "sonner";
@@ -24,6 +24,8 @@ interface Message {
     profilePhoto?: string;
   };
   createdAt: string;
+  read: boolean;
+  readAt?: string;
 }
 
 interface Conversation {
@@ -54,6 +56,7 @@ export default function Messages() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [ratingSeparators, setRatingSeparators] = useState<any[]>([]);
   const [messageText, setMessageText] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -140,6 +143,7 @@ export default function Messages() {
       const response = await messageAPI.getMessages(connectionId) as any;
       if (response.success) {
         setMessages(response.messages);
+        setRatingSeparators(response.ratingSeparators || []);
 
         // Mark as read
         await messageAPI.markAsRead(connectionId);
@@ -300,27 +304,89 @@ export default function Messages() {
                   {/* Messages */}
                   <ScrollArea className="flex-1 p-4">
                     <div className="space-y-4">
-                      {messages.map((message) => {
-                        const isOwnMessage = message.senderId._id === (user as any)?._id;
-                        return (
-                          <div
-                            key={message._id}
-                            className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
-                          >
-                            <div
-                              className={`max-w-[70%] rounded-lg px-4 py-2 ${isOwnMessage
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-muted"
-                                }`}
-                            >
-                              <p className="text-sm">{message.text}</p>
-                              <p className={`text-xs mt-1 ${isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                                {format(new Date(message.createdAt), "h:mm a")}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
+                      {(() => {
+                        // Merge messages and rating separators chronologically
+                        const timeline = [
+                          ...messages.map(m => ({ ...m, itemType: 'message' })),
+                          ...ratingSeparators.map(r => ({ ...r, itemType: 'separator' }))
+                        ].sort((a, b) => {
+                          const timeA = new Date(a.createdAt || a.timestamp);
+                          const timeB = new Date(b.createdAt || b.timestamp);
+                          return timeA.getTime() - timeB.getTime();
+                        });
+
+                        return timeline.map((item, index) => {
+                          if (item.itemType === 'separator') {
+                            // Rating separator
+                            return (
+                              <div key={`separator-${index}`} className="flex justify-center my-8">
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950 rounded-xl p-6 max-w-md border-2 border-blue-200 dark:border-blue-800 shadow-lg">
+                                  <div className="text-center">
+                                    <div className="flex justify-center items-center gap-1 mb-3">
+                                      {[...Array(5)].map((_, i) => (
+                                        <Star
+                                          key={i}
+                                          className={`h-5 w-5 ${i < item.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                                        />
+                                      ))}
+                                    </div>
+                                    <p className="font-bold text-lg mb-2">✅ Job Completed</p>
+                                    <p className="text-sm font-semibold text-primary mb-1">
+                                      Rating: {item.rating}/5
+                                    </p>
+                                    {item.feedback && (
+                                      <p className="text-sm text-muted-foreground italic mt-2 mb-3">
+                                        "{item.feedback}"
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">
+                                      {format(new Date(item.completedAt), "MMM d, yyyy 'at' h:mm a")}
+                                    </p>
+                                  </div>
+                                  <div className="mt-4 pt-4 border-t border-dashed border-blue-300 dark:border-blue-700 text-center">
+                                    <p className="text-xs text-muted-foreground">
+                                      💬 New conversation started below
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          } else {
+                            // Regular message
+                            const message = item as Message;
+                            const isOwnMessage = message.senderId._id === (user as any)?._id;
+                            return (
+                              <div
+                                key={message._id}
+                                className={`flex ${isOwnMessage ? "justify-end" : "justify-start"}`}
+                              >
+                                <div
+                                  className={`max-w-[70%] rounded-lg px-4 py-2 ${isOwnMessage
+                                    ? "bg-primary text-primary-foreground"
+                                    : "bg-muted"
+                                    }`}
+                                >
+                                  <p className="text-sm">{message.text}</p>
+                                  <div className={`flex items-center gap-1 mt-1 ${isOwnMessage ? "justify-end" : ""}`}>
+                                    <p className={`text-xs ${isOwnMessage ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+                                      {format(new Date(message.createdAt), "h:mm a")}
+                                    </p>
+                                    {isOwnMessage && (
+                                      <span className="ml-1">
+                                        {message.read ? (
+                                          <CheckCheck className="h-3 w-3 text-blue-400" />
+                                        ) : (
+                                          <Check className="h-3 w-3 text-primary-foreground/70" />
+                                        )}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          }
+                        });
+                      })()}
                       <div ref={messagesEndRef} />
                     </div>
                   </ScrollArea>

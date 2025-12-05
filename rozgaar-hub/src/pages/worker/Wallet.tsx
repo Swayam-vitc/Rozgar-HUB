@@ -9,7 +9,7 @@ import {
   AlertCircle, Send, QrCode, Plus, Copy, Check, ArrowUpRight, ArrowDownLeft,
   Building2, Search, X, Smartphone, Tv, Zap, Droplet, Wifi, ExternalLink
 } from "lucide-react";
-import { walletAPI, rechargeAPI, billAPI } from "@/lib/api";
+import { walletAPI, rechargeAPI, billAPI, paymentAPI } from "@/lib/api";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -76,6 +76,8 @@ export default function Wallet() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [jobPayments, setJobPayments] = useState<any[]>([]);
+  const [pendingJobPayments, setPendingJobPayments] = useState<any[]>([]);
 
   // Dialog states
   const [activeService, setActiveService] = useState<string | null>(null);
@@ -99,6 +101,11 @@ export default function Wallet() {
   const [provider, setProvider] = useState("");
 
   const [topupAmount, setTopupAmount] = useState("");
+  const [topupPaymentMethod, setTopupPaymentMethod] = useState("upi");
+  const [topupUpiId, setTopupUpiId] = useState("");
+  const [topupCardNumber, setTopupCardNumber] = useState("");
+  const [topupCardExpiry, setTopupCardExpiry] = useState("");
+  const [topupCardCvv, setTopupCardCvv] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [withdrawDesc, setWithdrawDesc] = useState("");
   const [selectedBank, setSelectedBank] = useState("");
@@ -124,6 +131,26 @@ export default function Wallet() {
       ]);
       setWallet((walletRes as any).wallet);
       setTransactions((transactionsRes as any).transactions);
+
+      // Fetch job payment history
+      try {
+        const jobPaymentsRes = await paymentAPI.getPaymentHistory() as any;
+        if (jobPaymentsRes.success) {
+          setJobPayments(jobPaymentsRes.payments || []);
+        }
+      } catch (error) {
+        console.log("No job payment history yet");
+      }
+
+      // Fetch pending job payments
+      try {
+        const pendingRes = await paymentAPI.getPendingPayments() as any;
+        if (pendingRes.success) {
+          setPendingJobPayments(pendingRes.pendingPayments || []);
+        }
+      } catch (error) {
+        console.log("No pending job payments");
+      }
     } catch (error) {
       console.error("Error fetching wallet data:", error);
       toast.error("Failed to load wallet data");
@@ -295,15 +322,35 @@ export default function Wallet() {
       return;
     }
 
+    // Validate payment method credentials
+    if (topupPaymentMethod === "upi" && !topupUpiId) {
+      toast.error("Please enter UPI ID");
+      return;
+    }
+
+    if (topupPaymentMethod === "card" && (!topupCardNumber || !topupCardExpiry || !topupCardCvv)) {
+      toast.error("Please enter complete card details");
+      return;
+    }
+
     try {
       setSubmitting(true);
+      // In real app, this would process the payment
+      // For now, simulate successful payment
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
       await walletAPI.addMoney({
         amount: Number(topupAmount),
-        paymentMethod: "bank"
+        paymentMethod: topupPaymentMethod
       });
+
       toast.success("Money added successfully!");
       setIsTopupOpen(false);
       setTopupAmount("");
+      setTopupUpiId("");
+      setTopupCardNumber("");
+      setTopupCardExpiry("");
+      setTopupCardCvv("");
       fetchData();
     } catch (error: any) {
       toast.error(error.message || "Failed to add money");
@@ -380,13 +427,33 @@ export default function Wallet() {
     ? transactions
     : transactions.filter(t => t.transactionType === activeFilter);
 
-  const thisMonthEarnings = transactions
+  // Wallet transactions earnings
+  const walletEarnings = transactions
     .filter(t => t.type === 'credit' && new Date(t.createdAt).getMonth() === new Date().getMonth())
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const pendingAmount = transactions
+  // Job payment earnings this month
+  const jobEarnings = jobPayments
+    .filter(p => {
+      const paidDate = new Date(p.paidAt);
+      const now = new Date();
+      return paidDate.getMonth() === now.getMonth() && paidDate.getFullYear() === now.getFullYear();
+    })
+    .reduce((sum, p) => sum + p.amount, 0);
+
+  // Combined this month earnings
+  const thisMonthEarnings = walletEarnings + jobEarnings;
+
+  // Pending from wallet transactions
+  const walletPending = transactions
     .filter(t => t.status === 'pending')
     .reduce((sum, t) => sum + t.amount, 0);
+
+  // Pending from job payments  
+  const jobPending = pendingJobPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  // Combined pending
+  const pendingAmount = walletPending + jobPending;
 
   const services = [
     { icon: Smartphone, title: "Mobile Recharge", color: "bg-blue-500", service: "mobile" },
@@ -454,11 +521,11 @@ export default function Wallet() {
                       <span className="text-xs">Add Money</span>
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
                       <DialogTitle>Add Money</DialogTitle>
                       <DialogDescription>
-                        Top-up your wallet balance
+                        Top-up your wallet balance using UPI, Card, or Net Banking
                       </DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleTopup}>
@@ -475,10 +542,87 @@ export default function Wallet() {
                             required
                           />
                         </div>
+
+                        <div className="border-t pt-4">
+                          <Label className="mb-3 block">Select Payment Method</Label>
+                          <Tabs value={topupPaymentMethod} onValueChange={setTopupPaymentMethod}>
+                            <TabsList className="grid w-full grid-cols-3">
+                              <TabsTrigger value="upi">UPI</TabsTrigger>
+                              <TabsTrigger value="card">Card</TabsTrigger>
+                              <TabsTrigger value="netbanking">Net Banking</TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="upi" className="space-y-4 mt-4">
+                              <div className="grid gap-2">
+                                <Label htmlFor="upi-id">UPI ID</Label>
+                                <Input
+                                  id="upi-id"
+                                  placeholder="yourname@upi"
+                                  value={topupUpiId}
+                                  onChange={(e) => setTopupUpiId(e.target.value)}
+                                  required={topupPaymentMethod === "upi"}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  Enter your UPI ID (e.g., 9876543210@paytm)
+                                </p>
+                              </div>
+                            </TabsContent>
+
+                            <TabsContent value="card" className="space-y-4 mt-4">
+                              <div className="grid gap-2">
+                                <Label htmlFor="card-number">Card Number</Label>
+                                <Input
+                                  id="card-number"
+                                  placeholder="1234 5678 9012 3456"
+                                  value={topupCardNumber}
+                                  onChange={(e) => setTopupCardNumber(e.target.value)}
+                                  maxLength={19}
+                                  required={topupPaymentMethod === "card"}
+                                />
+                              </div>
+                              <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                  <Label htmlFor="card-expiry">Expiry (MM/YY)</Label>
+                                  <Input
+                                    id="card-expiry"
+                                    placeholder="12/25"
+                                    value={topupCardExpiry}
+                                    onChange={(e) => setTopupCardExpiry(e.target.value)}
+                                    maxLength={5}
+                                    required={topupPaymentMethod === "card"}
+                                  />
+                                </div>
+                                <div className="grid gap-2">
+                                  <Label htmlFor="card-cvv">CVV</Label>
+                                  <Input
+                                    id="card-cvv"
+                                    type="password"
+                                    placeholder="123"
+                                    value={topupCardCvv}
+                                    onChange={(e) => setTopupCardCvv(e.target.value)}
+                                    maxLength={3}
+                                    required={topupPaymentMethod === "card"}
+                                  />
+                                </div>
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                🔒 Test Mode: Use any details. No real money charged.
+                              </p>
+                            </TabsContent>
+
+                            <TabsContent value="netbanking" className="space-y-4 mt-4">
+                              <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg">
+                                <p className="text-sm text-center">
+                                  You will be redirected to your bank's website to complete the payment
+                                </p>
+                              </div>
+                            </TabsContent>
+                          </Tabs>
+                        </div>
                       </div>
                       <DialogFooter>
-                        <Button type="submit" disabled={submitting}>
-                          {submitting ? "Processing..." : "Add Money"}
+                        <Button type="submit" disabled={submitting} className="w-full">
+                          {submitting ? "Processing..." : `Pay ₹${topupAmount || 0}`}
                         </Button>
                       </DialogFooter>
                     </form>

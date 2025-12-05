@@ -1,149 +1,72 @@
-# 🚀 Quick Start for Collaborators
+# 🚀 QUICK START - For Your Friends
 
-## One-Command Setup (Recommended)
+## Setup in 3 Commands!
 
-### For Mac/Linux:
 ```bash
-./setup.sh
+# 1. Clone and navigate
+git clone https://github.com/YOUR_USERNAME/RGH.git
+cd RGH/rozgaar-hub
+
+# 2. Install everything
+npm install && cd backend && npm install && cd ..
+
+# 3. Copy environment file (has all API keys!)
+cp backend/.env.example backend/.env
 ```
 
-### For Windows:
-```bash
-setup.bat
-```
-
-That's it! The script will:
-- ✅ Install all dependencies (frontend + backend)
-- ✅ **Automatically create `.env` files with database credentials**
-- ✅ Configure everything for you
-
----
-
-## What Happens Automatically
-
-The `setup.sh` script does ALL of this for you:
-
-1. **Checks** if Node.js is installed
-2. **Installs** frontend dependencies (`npm install`)
-3. **Installs** backend dependencies (`cd backend && npm install`)
-4. **Creates** `backend/.env` file (copies from `backend/.env.example`)
-5. **Creates** `.env` file (copies from `.env.example`)
-6. **Configures** database connection automatically
-
-**You don't need to edit ANY files!** Everything is pre-configured.
-
----
-
-## Complete Setup (Copy & Paste)
+## Run It!
 
 ```bash
-# 1. Clone the repository
-git clone <REPO_URL>
-cd rozgaar-hub
-
-# 2. Run setup script (does everything automatically)
-./setup.sh
-
-# 3. Start backend server (Terminal 1)
+# Terminal 1 - Backend
 cd backend
 npm run dev
 
-# 4. Start frontend server (Terminal 2 - open new terminal)
+# Terminal 2 - Frontend  
 npm run dev
-
-# 5. Open in browser
-# http://localhost:8080
 ```
+
+## ✅ Done!
+
+Open: **http://localhost:8080**
 
 ---
 
-## What You'll See
+## What's Already Configured?
 
-When you run `./setup.sh`, you'll see:
+- ✅ **MongoDB** - Shared test database for everyone
+- ✅ **Razorpay** - Test payment gateway (fake card: 4111 1111 1111 1111)
+- ✅ **OpenCage** - Location/geocoding API
 
-```
-🚀 RozgaarHub Setup Script
-==========================
-
-✅ Node.js version: v18.x.x
-✅ npm version: 9.x.x
-
-📦 Installing frontend dependencies...
-✅ Frontend dependencies installed
-
-📦 Installing backend dependencies...
-✅ Backend dependencies installed
-
-🔍 Checking environment files...
-⚠️  backend/.env not found!
-📋 Copying backend/.env.example to backend/.env...
-✅ Created backend/.env from example file
-✅ Database credentials are already configured!
-
-⚠️  .env not found!
-📋 Copying .env.example to .env...
-✅ Created .env from example file
-
-✅ Setup Complete!
-
-📝 Next Steps:
-1. Environment files are configured with shared database
-2. Open TWO terminal windows:
-
-   Terminal 1 (Backend):
-   $ cd backend
-   $ npm run dev
-
-   Terminal 2 (Frontend):
-   $ npm run dev
-
-3. Open http://localhost:8080 in your browser
-
-🎉 You're all set! Everyone shares the same database.
-```
+**No API key signup needed!** Everything works out of the box.
 
 ---
 
-## No Manual Configuration Needed!
+## Shared Database
 
-❌ **You DON'T need to:**
-- Create `.env` files manually
-- Edit any configuration
-- Set up MongoDB account
-- Copy/paste database credentials
-
-✅ **The script does it ALL automatically!**
+Everyone uses the same MongoDB database, so:
+- You can see jobs/workers created by others
+- Great for testing together
+- Don't put real/sensitive data
 
 ---
 
-## Troubleshooting
+## Test Payment
 
-### "Permission denied" when running setup.sh
+Use this **fake card**:
+- Card: `4111 1111 1111 1111`
+- CVV: Any 3 digits
+- Expiry: Any future date
 
-```bash
-chmod +x setup.sh
-./setup.sh
-```
-
-### "Node.js is not installed"
-
-Install Node.js from: https://nodejs.org/
-(Download the LTS version)
-
-### "Port already in use"
-
-```bash
-# Kill port 4000 (backend)
-lsof -ti:4000 | xargs kill -9
-
-# Kill port 8080 (frontend)
-lsof -ti:8080 | xargs kill -9
-```
+No real money charged!
 
 ---
 
-## That's It!
+## Got Issues?
 
-The setup script handles everything. Just run it and start coding! 🎉
+1. **Can't connect to MongoDB**: Make sure you ran `cp backend/.env.example backend/.env`
+2. **Port in use**: Kill the port: `lsof -ti:4000 | xargs kill -9`
+3. **Module not found**: Reinstall: `npm install`
 
-For detailed documentation, see [SETUP.md](./SETUP.md)
+---
+
+**That's it!** Check the main README.md for full documentation.

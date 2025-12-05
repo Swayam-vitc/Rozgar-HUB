@@ -57,11 +57,7 @@ export function EmployerSidebar() {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-16 items-center gap-2 border-b px-6">
-            <Briefcase className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">
-              <span className="text-primary">Rozgaar</span>
-              <span className="text-secondary">Hub</span>
-            </span>
+            <img src="/logo.jpg" alt="RozgaarHub" className="h-10 w-auto object-contain" />
           </div>
 
           {/* Navigation */}

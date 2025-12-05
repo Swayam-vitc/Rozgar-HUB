@@ -82,6 +82,7 @@ export const employerAPI = {
     getProfile: () => api.get('/employer/profile'),
     createJob: (data) => api.post('/employer/jobs', data),
     getJobs: (params) => api.get('/employer/jobs', { params }),
+    getJobById: (id: string) => api.get(`/jobs/${id}`),
     updateJob: (id, data) => api.put(`/employer/jobs/${id}`, data),
     deleteJob: (id) => api.delete(`/employer/jobs/${id}`),
     searchWorkers: (params) => api.get('/employer/workers', { params }),
@@ -122,6 +123,32 @@ export const messageAPI = {
     getConversations: () => api.get('/messages/conversations'),
     markAsRead: (connectionId: string) => api.put('/messages/mark-read', { connectionId }),
     getUnreadCount: () => api.get('/messages/unread-count')
+};
+
+// Wallet API
+export const walletAPI = {
+    getWallet: () => api.get('/wallet'),
+    getTransactions: (params?: { type?: string }) => api.get('/wallet/transactions', { params }),
+    sendMoney: (data: { recipientWalletId: string; amount: number; description?: string }) => api.post('/wallet/send', data),
+    addMoney: (data: { amount: number; paymentMethod?: string }) => api.post('/wallet/topup', data),
+    withdraw: (data: { amount: number; description?: string; bankAccountId?: string }) => api.post('/wallet/withdraw', data),
+    linkBankAccount: (data: { accountHolderName: string; accountNumber: string; ifscCode: string; bankName: string; isDefault?: boolean }) => api.post('/wallet/bank-account', data),
+    removeBankAccount: (id: string) => api.delete(`/wallet/bank-account/${id}`),
+    searchUser: (query: string) => api.get('/wallet/search', { params: { query } })
+};
+
+// Recharge API
+export const rechargeAPI = {
+    getOperators: () => api.get('/recharge/operators'),
+    mobileRecharge: (data: { mobileNumber: string; operator: string; amount: number }) => api.post('/recharge/mobile', data),
+    dthRecharge: (data: { subscriberId: string; operator: string; amount: number }) => api.post('/recharge/dth', data)
+};
+
+// Bill Payment API
+export const billAPI = {
+    payElectricity: (data: { consumerNumber: string; provider: string; amount: number }) => api.post('/bills/electricity', data),
+    payWater: (data: { consumerNumber: string; provider: string; amount: number }) => api.post('/bills/water', data),
+    payBroadband: (data: { accountNumber: string; provider: string; amount: number }) => api.post('/bills/broadband', data)
 };
 
 export default api;

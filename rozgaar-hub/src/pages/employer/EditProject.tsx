@@ -59,10 +59,10 @@ export default function EditProject() {
 
             try {
                 setLoading(true);
-                const response = await employerAPI.getJobs({ id }) as any;
+                const response = await employerAPI.getJobById(id) as any;
 
-                if (response.success && response.jobs && response.jobs.length > 0) {
-                    const job = response.jobs[0];
+                if (response.success && response.job) {
+                    const job = response.job;
 
                     // Parse location to extract state and city
                     const locationParts = job.location?.split(", ") || [];

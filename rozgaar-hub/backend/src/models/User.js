@@ -134,6 +134,42 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // KYC & Payment Fields
+    virtualPaymentId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
+    kycStatus: {
+        type: String,
+        enum: ['NOT_STARTED', 'PENDING', 'VERIFIED', 'REJECTED'],
+        default: 'NOT_STARTED'
+    },
+    kycData: {
+        panNumber: {
+            type: String,
+            default: ''
+        },
+        aadhaarNumber: {
+            type: String,
+            default: ''
+        },
+        dateOfBirth: {
+            type: Date
+        },
+        address: {
+            street: String,
+            city: String,
+            state: String,
+            pincode: String
+        },
+        submittedAt: {
+            type: Date
+        },
+        verifiedAt: {
+            type: Date
+        }
+    },
     // Employer-specific fields
     companyName: {
         type: String,
@@ -147,8 +183,14 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Hash password before saving
+// Hash password and generate virtual payment ID before saving
 userSchema.pre('save', async function (next) {
+    // Generate virtual payment ID if not exists
+    if (this.isNew && !this.virtualPaymentId) {
+        const username = this.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+        this.virtualPaymentId = `${username}@rozgaarhub`;
+    }
+
     if (!this.isModified('password')) {
         return next();
     }

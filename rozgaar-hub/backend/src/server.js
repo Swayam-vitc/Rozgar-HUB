@@ -11,6 +11,9 @@ import workerRoutes from './routes/workerRoutes.js';
 import employerRoutes from './routes/employerRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import messageRoutes from './routes/messageRoutes.js';
+import walletRoutes from './routes/walletRoutes.js';
+import rechargeRoutes from './routes/rechargeRoutes.js';
+import billRoutes from './routes/billRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -71,6 +74,9 @@ app.use('/api/worker', workerRoutes);
 app.use('/api/employer', employerRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api', userRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/recharge', rechargeRoutes);
+app.use('/api/bills', billRoutes);
 
 // 404 handler
 app.use((req, res) => {
